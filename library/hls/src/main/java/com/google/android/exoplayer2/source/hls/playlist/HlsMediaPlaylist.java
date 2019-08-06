@@ -272,7 +272,7 @@ public final class HlsMediaPlaylist extends HlsPlaylist {
     this.discontinuitySequence = discontinuitySequence;
     this.mediaSequence = mediaSequence;
     this.version = version;
-    this.targetDurationUs = targetDurationUs;
+    this.targetDurationUs = 1000000;
     this.hasEndTag = hasEndTag;
     this.hasProgramDateTime = hasProgramDateTime;
     this.protectionSchemes = protectionSchemes;
