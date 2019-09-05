@@ -37,7 +37,7 @@ dependencies {
     compileOnly 'org.checkerframework:checker-qual:' + checkerframeworkVersion
     testImplementation project(modulePrefix + 'testutils')
     testImplementation 'org.robolectric:robolectric:' + robolectricVersion
-    api 'com.squareup.okhttp3:okhttp:4.1.0'
+    api 'com.squareup.okhttp3:okhttp:4.1.1'
 }
 
 ext {
