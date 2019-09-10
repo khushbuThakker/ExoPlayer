@@ -70,6 +70,7 @@ public final class HlsMediaSource extends BaseMediaSource
     private DrmSessionManager<?> drmSessionManager;
     private LoadErrorHandlingPolicy loadErrorHandlingPolicy;
     private boolean allowChunklessPreparation;
+    private long LowLatency;
     private boolean useSessionKeys;
     private boolean isCreateCalled;
     @Nullable private Object tag;
@@ -242,6 +243,12 @@ public final class HlsMediaSource extends BaseMediaSource
       return this;
     }
 
+    public Factory setLowLatency(long LowLatency) {
+      Assertions.checkState(!isCreateCalled);
+      this.LowLatency = LowLatency;
+      return this;
+    }
+
     /**
      * Sets whether to use #EXT-X-SESSION-KEY tags provided in the master playlist. If enabled, it's
      * assumed that any single session key declared in the master playlist can be used to obtain all
@@ -294,6 +301,7 @@ public final class HlsMediaSource extends BaseMediaSource
           playlistTrackerFactory.createTracker(
               hlsDataSourceFactory, loadErrorHandlingPolicy, playlistParserFactory),
           allowChunklessPreparation,
+          LowLatency,
           useSessionKeys,
           tag);
     }
@@ -319,6 +327,7 @@ public final class HlsMediaSource extends BaseMediaSource
   private final DrmSessionManager<?> drmSessionManager;
   private final LoadErrorHandlingPolicy loadErrorHandlingPolicy;
   private final boolean allowChunklessPreparation;
+  private final long LowLatency;
   private final boolean useSessionKeys;
   private final HlsPlaylistTracker playlistTracker;
   @Nullable private final Object tag;
@@ -334,6 +343,7 @@ public final class HlsMediaSource extends BaseMediaSource
       LoadErrorHandlingPolicy loadErrorHandlingPolicy,
       HlsPlaylistTracker playlistTracker,
       boolean allowChunklessPreparation,
+      long LowLatency,
       boolean useSessionKeys,
       @Nullable Object tag) {
     this.manifestUri = manifestUri;
@@ -344,6 +354,7 @@ public final class HlsMediaSource extends BaseMediaSource
     this.loadErrorHandlingPolicy = loadErrorHandlingPolicy;
     this.playlistTracker = playlistTracker;
     this.allowChunklessPreparation = allowChunklessPreparation;
+    this.LowLatency = LowLatency;
     this.useSessionKeys = useSessionKeys;
     this.tag = tag;
   }
@@ -413,7 +424,10 @@ public final class HlsMediaSource extends BaseMediaSource
       long periodDurationUs =
           playlist.hasEndTag ? offsetFromInitialStartTimeUs + playlist.durationUs : C.TIME_UNSET;
       List<HlsMediaPlaylist.Segment> segments = playlist.segments;
-      if (windowDefaultStartPositionUs == C.TIME_UNSET) {
+      if (LowLatency > 0 && playlist.durationUs > (1000 * LowLatency)) {
+        windowDefaultStartPositionUs = playlist.durationUs - (1000 * LowLatency);
+        if (playlist.targetDurationUs > (1000 * LowLatency) / 2) playlist.targetDurationUs = (1000 * LowLatency) / 2;
+      } else if (windowDefaultStartPositionUs == C.TIME_UNSET) {
         windowDefaultStartPositionUs = 0;
         if (!segments.isEmpty()) {
           int defaultStartSegmentIndex = Math.max(0, segments.size() - 5);

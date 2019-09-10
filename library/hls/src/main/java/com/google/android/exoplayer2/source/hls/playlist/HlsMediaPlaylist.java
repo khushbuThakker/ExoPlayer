@@ -208,7 +208,7 @@ public final class HlsMediaPlaylist extends HlsPlaylist {
   /**
    * The target duration in microseconds, as defined by #EXT-X-TARGETDURATION.
    */
-  public final long targetDurationUs;
+  public long targetDurationUs;
   /**
    * Whether the playlist contains the #EXT-X-ENDLIST tag.
    */
