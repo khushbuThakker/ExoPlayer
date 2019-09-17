@@ -425,8 +425,15 @@ public final class HlsMediaSource extends BaseMediaSource
           playlist.hasEndTag ? offsetFromInitialStartTimeUs + playlist.durationUs : C.TIME_UNSET;
       List<HlsMediaPlaylist.Segment> segments = playlist.segments;
       if (LowLatency > 0 && playlist.durationUs > (1000 * LowLatency)) {
-        windowDefaultStartPositionUs = playlist.durationUs - (1000 * LowLatency);
-        if (playlist.targetDurationUs > (1000 * LowLatency) / 2) playlist.targetDurationUs = (1000 * LowLatency) / 2;
+
+        //If user requested value for LowLatency is lower last segment + 1.2s use the later
+        long mLowLatency = Math.max((1000 * LowLatency),
+            segments.get(Math.max(0, segments.size() - 1)).durationUs + 1200000);
+
+        windowDefaultStartPositionUs = playlist.durationUs - mLowLatency;
+
+        if (playlist.targetDurationUs > mLowLatency / 2) playlist.targetDurationUs = mLowLatency / 2;
+
       } else if (windowDefaultStartPositionUs == C.TIME_UNSET) {
         windowDefaultStartPositionUs = 0;
         if (!segments.isEmpty()) {
