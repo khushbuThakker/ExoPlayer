@@ -19,10 +19,10 @@ project.ext {
     targetSdkVersion = 28
     compileSdkVersion = 28
     dexmakerVersion = '2.25.0'
-    mockitoVersion = '3.0.0'
+    mockitoVersion = '3.1.0'
     robolectricVersion = '4.2'
     autoValueVersion = '1.6.6'
-    checkerframeworkVersion = '2.11.0'
+    checkerframeworkVersion = '2.11.1'
     checkerframeworkVersionC = '2.5.5'
     androidXTestVersion = '1.2.0'
     androidXTestVersionJ = '1.1.1'
