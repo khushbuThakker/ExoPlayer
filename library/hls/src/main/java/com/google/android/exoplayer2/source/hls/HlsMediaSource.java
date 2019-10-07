@@ -368,6 +368,7 @@ public final class HlsMediaSource extends BaseMediaSource
   @Override
   protected void prepareSourceInternal(@Nullable TransferListener mediaTransferListener) {
     this.mediaTransferListener = mediaTransferListener;
+    drmSessionManager.prepare();
     EventDispatcher eventDispatcher = createEventDispatcher(/* mediaPeriodId= */ null);
     playlistTracker.start(manifestUri, eventDispatcher, /* listener= */ this);
   }
@@ -402,6 +403,7 @@ public final class HlsMediaSource extends BaseMediaSource
   @Override
   protected void releaseSourceInternal() {
     playlistTracker.stop();
+    drmSessionManager.release();
   }
 
   @Override
@@ -458,6 +460,7 @@ public final class HlsMediaSource extends BaseMediaSource
               windowDefaultStartPositionUs,
               /* isSeekable= */ true,
               /* isDynamic= */ !playlist.hasEndTag,
+              /* isLive= */ true,
               manifest,
               tag);
     } else /* not live */ {
@@ -474,6 +477,7 @@ public final class HlsMediaSource extends BaseMediaSource
               windowDefaultStartPositionUs,
               /* isSeekable= */ true,
               /* isDynamic= */ false,
+              /* isLive= */ false,
               manifest,
               tag);
     }

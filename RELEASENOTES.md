@@ -2,10 +2,33 @@
 
 ### dev-v2 (not yet released) ###
 
-* Fix transitions between packed audio and non-packed audio segments in HLS
-  ([#6444](https://github.com/google/ExoPlayer/issues/6444)).
-* DASH: Support negative @r values in segment timelines
-  ([#1787](https://github.com/google/ExoPlayer/issues/1787)).
+* UI
+  * Setting `app:played_color` on `PlayerView` and `PlayerControlView` no longer
+    adjusts the colors of the scrubber handle , buffered and unplayed parts of
+    the time bar. These can be set separately using `app:scrubber_color`,
+    `app:buffered_color` and `app_unplayed_color` respectively.
+  * Setting `app:ad_marker_color` on `PlayerView` and `PlayerControlView` no
+    longer adjusts the color of played ad markers. The color of played ad
+    markers can be set separately using `app:played_ad_marker_color`
+* DRM:
+  * Inject `DrmSessionManager` into the `MediaSources` instead of `Renderers`
+    ([#5619](https://github.com/google/ExoPlayer/issues/5619)).
+  * Add a `DefaultDrmSessionManager.Builder`.
+  * Add support for the use of secure decoders in clear sections of content
+    ([#4867](https://github.com/google/ExoPlayer/issues/4867)).
+  * Add basic DRM support to the Cast demo app.
+  * Add support for custom `LoadErrorHandlingPolicies` in key and provisioning
+    requests ([#6334](https://github.com/google/ExoPlayer/issues/6334)).
+  * Remove `DefaultDrmSessionManager` factory methods that leak `ExoMediaDrm`
+    instances ([#4721](https://github.com/google/ExoPlayer/issues/4721)).
+* Remove the `DataSpec.FLAG_ALLOW_ICY_METADATA` flag. Instead, set the header
+  `IcyHeaders.REQUEST_HEADER_ENABLE_METADATA_NAME` in the `DataSpec`
+  `httpRequestHeaders`.
+* DASH:
+  * Support negative @r values in segment timelines
+    ([#1787](https://github.com/google/ExoPlayer/issues/1787)).
+  * Support `Label` elements
+    ([#6297](https://github.com/google/ExoPlayer/issues/6297)).
 * Add `allowedCapturePolicy` field to `AudioAttributes` wrapper to allow to
   opt-out of audio recording.
 * Add `DataSpec.httpRequestHeaders` to set HTTP request headers when connecting
@@ -15,13 +38,12 @@
 * Bypass sniffing in `ProgressiveMediaPeriod` in case a single extractor is
   provided ([#6325](https://github.com/google/ExoPlayer/issues/6325)).
 * Surface information provided by methods `isHardwareAccelerated`,
-  `isSoftwareOnly` and `isVendor` added in Android Q in `MediaCodecInfo` class
+  `isSoftwareOnly` and `isVendor` added in Android 10 in `MediaCodecInfo` class
   ([#5839](https://github.com/google/ExoPlayer/issues/5839)).
 * Update `DefaultTrackSelector` to apply a viewport constraint for the default
   display by default.
 * Add `PlaybackStatsListener` to collect `PlaybackStats` for playbacks analysis
   and analytics reporting (TODO: link to developer guide page/blog post).
-* Add basic DRM support to the Cast demo app.
 * Assume that encrypted content requires secure decoders in renderer support
   checks ([#5568](https://github.com/google/ExoPlayer/issues/5568)).
 * Decoders: Prefer decoders that advertise format support over ones that do not,
@@ -35,7 +57,7 @@
   `SourceInfoRefreshListener` anymore. Instead make it accessible through
   `Player.getCurrentManifest()` and `Timeline.Window.manifest`. Also rename
   `SourceInfoRefreshListener` to `MediaSourceCaller`.
-* Set `compileSdkVersion` to 29 to use Android Q APIs.
+* Set `compileSdkVersion` to 29 to use Android 10 APIs.
 * Add `enable` and `disable` methods to `MediaSource` to improve resource
   management in playlists.
 * Text selection logic:
@@ -47,8 +69,6 @@
   the `Player` set later using `AnalyticsCollector.setPlayer`.
 * Replace `ExoPlayerFactory` by `SimpleExoPlayer.Builder` and
   `ExoPlayer.Builder`.
-* Inject `DrmSessionManager` into the `MediaSources` instead of `Renderers`
-  ([#5619](https://github.com/google/ExoPlayer/issues/5619)).
 * Fix issue where player errors are thrown too early at playlist transitions
   ([#5407](https://github.com/google/ExoPlayer/issues/5407)).
 * Deprecate `setTag` parameter of `Timeline.getWindow`. Tags will always be set.
@@ -61,6 +81,28 @@
 * Fix Dolby Vision fallback to AVC and HEVC.
 * Add top-level playlist API
   ([#6161](https://github.com/google/ExoPlayer/issues/6161)).
+* Add demo app to show how to use the Android 10 `SurfaceControl` API with
+  ExoPlayer ([#677](https://github.com/google/ExoPlayer/issues/677)).
+* Add automatic `WakeLock` handling to `SimpleExoPlayer` through calling
+  `setEnableWakeLock`, which requires the
+  `android.Manifest.permission#WAKE_LOCK` permission
+  ([#5846](https://github.com/google/ExoPlayer/issues/5846)).
+* Add `Player.onPlaybackSuppressionReasonChanged` to allow listeners to
+  detect playbacks suppressions (e.g. audio focus loss) directly
+  ([#6203](https://github.com/google/ExoPlayer/issues/6203)).
+* VP9 extension:
+  * Rename `VpxVideoSurfaceView` to `VideoDecoderSurfaceView`
+    and move it to the core library.
+  * Move `LibvpxVideoRenderer.MSG_SET_OUTPUT_BUFFER_RENDERER` to
+    `C.MSG_SET_OUTPUT_BUFFER_RENDERER`.
+* Add `Timeline.Window.isLive` to indicate that a window is a live stream
+  ([#2668](https://github.com/google/ExoPlayer/issues/2668) and
+  [#5973](https://github.com/google/ExoPlayer/issues/5973)).
+* Expose the raw ICY metadata through `IcyInfo`
+  ([#6476](https://github.com/google/ExoPlayer/issues/6476)).
+* Fail more explicitly when local-file Uris contain invalid parts (e.g.
+  fragment) ([#6470](https://github.com/google/ExoPlayer/issues/6470)).
+* Add `MediaPeriod.isLoading` to improve `Player.isLoading` state.
 
 ### 2.10.5 (2019-09-20) ###
 
@@ -88,6 +130,8 @@
   * Support unwrapping of nested metadata (e.g. ID3 and SCTE-35 in EMSG).
 * Add `HttpDataSource.getResponseCode` to provide the status code associated
   with the most recent HTTP response.
+* Fix transitions between packed audio and non-packed audio segments in HLS
+  ([#6444](https://github.com/google/ExoPlayer/issues/6444)).
 * Fix issue where a request would be retried after encountering an error, even
   though the `LoadErrorHandlingPolicy` classified the error as fatal.
 * Fix initialization data handling for FLAC in MP4

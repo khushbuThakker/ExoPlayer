@@ -552,6 +552,7 @@ public final class SsMediaSource extends BaseMediaSource
   @Override
   protected void prepareSourceInternal(@Nullable TransferListener mediaTransferListener) {
     this.mediaTransferListener = mediaTransferListener;
+    drmSessionManager.prepare();
     if (sideloadedManifest) {
       manifestLoaderErrorThrower = new LoaderErrorThrower.Dummy();
       processManifest();
@@ -606,6 +607,7 @@ public final class SsMediaSource extends BaseMediaSource
       manifestRefreshHandler.removeCallbacksAndMessages(null);
       manifestRefreshHandler = null;
     }
+    drmSessionManager.release();
   }
 
   // Loader.Callback implementation
@@ -694,7 +696,8 @@ public final class SsMediaSource extends BaseMediaSource
               /* windowPositionInPeriodUs= */ 0,
               /* windowDefaultStartPositionUs= */ 0,
               /* isSeekable= */ true,
-              manifest.isLive,
+              /* isDynamic= */ manifest.isLive,
+              /* isLive= */ manifest.isLive,
               manifest,
               tag);
     } else if (manifest.isLive) {
@@ -717,6 +720,7 @@ public final class SsMediaSource extends BaseMediaSource
               defaultStartPositionUs,
               /* isSeekable= */ true,
               /* isDynamic= */ true,
+              /* isLive= */ true,
               manifest,
               tag);
     } else {
@@ -730,6 +734,7 @@ public final class SsMediaSource extends BaseMediaSource
               /* windowDefaultStartPositionUs= */ 0,
               /* isSeekable= */ true,
               /* isDynamic= */ false,
+              /* isLive= */ false,
               manifest,
               tag);
     }
