@@ -2,6 +2,9 @@
 
 ### dev-v2 (not yet released) ###
 
+* AV1 extension: Uses libgav1 to decode AV1 videos. Android 10 includes an AV1
+  decoder, but the older versions of Android require this extension for playback
+  of AV1 streams ([#3353](https://github.com/google/ExoPlayer/issues/3353)).
 * UI
   * Setting `app:played_color` on `PlayerView` and `PlayerControlView` no longer
     adjusts the colors of the scrubber handle , buffered and unplayed parts of
@@ -29,6 +32,8 @@
     ([#1787](https://github.com/google/ExoPlayer/issues/1787)).
   * Support `Label` elements
     ([#6297](https://github.com/google/ExoPlayer/issues/6297)).
+  * Support legacy audio channel configuration
+    ([#6523](https://github.com/google/ExoPlayer/issues/6523)).
 * Add `allowedCapturePolicy` field to `AudioAttributes` wrapper to allow to
   opt-out of audio recording.
 * Add `DataSpec.httpRequestHeaders` to set HTTP request headers when connecting
@@ -95,6 +100,8 @@
     and move it to the core library.
   * Move `LibvpxVideoRenderer.MSG_SET_OUTPUT_BUFFER_RENDERER` to
     `C.MSG_SET_OUTPUT_BUFFER_RENDERER`.
+  * Use `VideoDecoderRenderer` as an implementation of
+    `VideoDecoderOutputBufferRenderer`, instead of `VideoDecoderSurfaceView`.
 * Add `Timeline.Window.isLive` to indicate that a window is a live stream
   ([#2668](https://github.com/google/ExoPlayer/issues/2668) and
   [#5973](https://github.com/google/ExoPlayer/issues/5973)).
@@ -103,6 +110,10 @@
 * Fail more explicitly when local-file Uris contain invalid parts (e.g.
   fragment) ([#6470](https://github.com/google/ExoPlayer/issues/6470)).
 * Add `MediaPeriod.isLoading` to improve `Player.isLoading` state.
+* Add support for ID3-in-EMSG in HLS streams
+  ([spec](https://aomediacodec.github.io/av1-id3/)).
+* Make show and hide player controls accessible for TalkBack in `PlayerView`.
+* Pass the codec output `MediaFormat` to `VideoFrameMetadataListener`.
 
 ### 2.10.5 (2019-09-20) ###
 

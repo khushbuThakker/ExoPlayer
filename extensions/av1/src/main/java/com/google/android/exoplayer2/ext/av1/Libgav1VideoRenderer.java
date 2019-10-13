@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 The Android Open Source Project
+ * Copyright (C) 2019 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.android.exoplayer2.ext.vp9;
+package com.google.android.exoplayer2.ext.av1;
 
 import static java.lang.Runtime.getRuntime;
 
@@ -30,16 +30,16 @@ import com.google.android.exoplayer2.drm.DrmSessionManager;
 import com.google.android.exoplayer2.drm.ExoMediaCrypto;
 import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.TraceUtil;
+import com.google.android.exoplayer2.util.Util;
 import com.google.android.exoplayer2.video.SimpleDecoderVideoRenderer;
 import com.google.android.exoplayer2.video.VideoDecoderException;
 import com.google.android.exoplayer2.video.VideoDecoderInputBuffer;
 import com.google.android.exoplayer2.video.VideoDecoderOutputBuffer;
 import com.google.android.exoplayer2.video.VideoDecoderOutputBufferRenderer;
-import com.google.android.exoplayer2.video.VideoFrameMetadataListener;
 import com.google.android.exoplayer2.video.VideoRendererEventListener;
 
 /**
- * Decodes and renders video using the native VP9 decoder.
+ * Decodes and renders video using libgav1 decoder.
  *
  * <p>This renderer accepts the following messages sent via {@link ExoPlayer#createMessage(Target)}
  * on the playback thread:
@@ -52,7 +52,13 @@ import com.google.android.exoplayer2.video.VideoRendererEventListener;
  *       VideoDecoderOutputBufferRenderer}, or null.
  * </ul>
  */
-public class LibvpxVideoRenderer extends SimpleDecoderVideoRenderer {
+public class Libgav1VideoRenderer extends SimpleDecoderVideoRenderer {
+
+  private static final int DEFAULT_NUM_OF_INPUT_BUFFERS = 4;
+  private static final int DEFAULT_NUM_OF_OUTPUT_BUFFERS = 4;
+  /* Default size based on 720p resolution video compressed by a factor of two. */
+  private static final int DEFAULT_INPUT_BUFFER_SIZE =
+      Util.ceilDivide(1280, 64) * Util.ceilDivide(720, 64) * (64 * 64 * 3 / 2) / 2;
 
   /** The number of input buffers. */
   private final int numInputBuffers;
@@ -61,28 +67,14 @@ public class LibvpxVideoRenderer extends SimpleDecoderVideoRenderer {
    * requiring multiple output buffers to be dequeued at a time for it to make progress.
    */
   private final int numOutputBuffers;
-  /**
-   * The default input buffer size. The value is based on <a
-   * href="https://android.googlesource.com/platform/frameworks/av/+/d42b90c5183fbd9d6a28d9baee613fddbf8131d6/media/libstagefright/codecs/on2/dec/SoftVPX.cpp">SoftVPX.cpp</a>.
-   */
-  private static final int DEFAULT_INPUT_BUFFER_SIZE = 768 * 1024;
 
-  private final boolean enableRowMultiThreadMode;
-  private final boolean disableLoopFilter;
   private final int threads;
 
-  private VpxDecoder decoder;
-  private VideoFrameMetadataListener frameMetadataListener;
+  @Nullable private Gav1Decoder decoder;
 
   /**
-   * @param allowedJoiningTimeMs The maximum duration in milliseconds for which this video renderer
-   *     can attempt to seamlessly join an ongoing playback.
-   */
-  public LibvpxVideoRenderer(long allowedJoiningTimeMs) {
-    this(allowedJoiningTimeMs, null, null, 0);
-  }
-
-  /**
+   * Creates a Libgav1VideoRenderer.
+   *
    * @param allowedJoiningTimeMs The maximum duration in milliseconds for which this video renderer
    *     can attempt to seamlessly join an ongoing playback.
    * @param eventHandler A handler to use when delivering events to {@code eventListener}. May be
@@ -91,7 +83,7 @@ public class LibvpxVideoRenderer extends SimpleDecoderVideoRenderer {
    * @param maxDroppedFramesToNotify The maximum number of frames that can be dropped between
    *     invocations of {@link VideoRendererEventListener#onDroppedFrames(int, long)}.
    */
-  public LibvpxVideoRenderer(
+  public Libgav1VideoRenderer(
       long allowedJoiningTimeMs,
       @Nullable Handler eventHandler,
       @Nullable VideoRendererEventListener eventListener,
@@ -101,12 +93,14 @@ public class LibvpxVideoRenderer extends SimpleDecoderVideoRenderer {
         eventHandler,
         eventListener,
         maxDroppedFramesToNotify,
-        /* drmSessionManager= */ null,
-        /* playClearSamplesWithoutKeys= */ false,
-        /* disableLoopFilter= */ false);
+        /* threads= */ getRuntime().availableProcessors(),
+        DEFAULT_NUM_OF_INPUT_BUFFERS,
+        DEFAULT_NUM_OF_OUTPUT_BUFFERS);
   }
 
   /**
+   * Creates a Libgav1VideoRenderer.
+   *
    * @param allowedJoiningTimeMs The maximum duration in milliseconds for which this video renderer
    *     can attempt to seamlessly join an ongoing playback.
    * @param eventHandler A handler to use when delivering events to {@code eventListener}. May be
@@ -114,67 +108,15 @@ public class LibvpxVideoRenderer extends SimpleDecoderVideoRenderer {
    * @param eventListener A listener of events. May be null if delivery of events is not required.
    * @param maxDroppedFramesToNotify The maximum number of frames that can be dropped between
    *     invocations of {@link VideoRendererEventListener#onDroppedFrames(int, long)}.
-   * @param drmSessionManager For use with encrypted media. May be null if support for encrypted
-   *     media is not required.
-   * @param playClearSamplesWithoutKeys Encrypted media may contain clear (un-encrypted) regions.
-   *     For example a media file may start with a short clear region so as to allow playback to
-   *     begin in parallel with key acquisition. This parameter specifies whether the renderer is
-   *     permitted to play clear regions of encrypted media files before {@code drmSessionManager}
-   *     has obtained the keys necessary to decrypt encrypted regions of the media.
-   * @param disableLoopFilter Disable the libvpx in-loop smoothing filter.
-   */
-  public LibvpxVideoRenderer(
-      long allowedJoiningTimeMs,
-      @Nullable Handler eventHandler,
-      @Nullable VideoRendererEventListener eventListener,
-      int maxDroppedFramesToNotify,
-      @Nullable DrmSessionManager<ExoMediaCrypto> drmSessionManager,
-      boolean playClearSamplesWithoutKeys,
-      boolean disableLoopFilter) {
-    this(
-        allowedJoiningTimeMs,
-        eventHandler,
-        eventListener,
-        maxDroppedFramesToNotify,
-        drmSessionManager,
-        playClearSamplesWithoutKeys,
-        disableLoopFilter,
-        /* enableRowMultiThreadMode= */ false,
-        getRuntime().availableProcessors(),
-        /* numInputBuffers= */ 4,
-        /* numOutputBuffers= */ 4);
-  }
-
-  /**
-   * @param allowedJoiningTimeMs The maximum duration in milliseconds for which this video renderer
-   *     can attempt to seamlessly join an ongoing playback.
-   * @param eventHandler A handler to use when delivering events to {@code eventListener}. May be
-   *     null if delivery of events is not required.
-   * @param eventListener A listener of events. May be null if delivery of events is not required.
-   * @param maxDroppedFramesToNotify The maximum number of frames that can be dropped between
-   *     invocations of {@link VideoRendererEventListener#onDroppedFrames(int, long)}.
-   * @param drmSessionManager For use with encrypted media. May be null if support for encrypted
-   *     media is not required.
-   * @param playClearSamplesWithoutKeys Encrypted media may contain clear (un-encrypted) regions.
-   *     For example a media file may start with a short clear region so as to allow playback to
-   *     begin in parallel with key acquisition. This parameter specifies whether the renderer is
-   *     permitted to play clear regions of encrypted media files before {@code drmSessionManager}
-   *     has obtained the keys necessary to decrypt encrypted regions of the media.
-   * @param disableLoopFilter Disable the libvpx in-loop smoothing filter.
-   * @param enableRowMultiThreadMode Whether row multi threading decoding is enabled.
-   * @param threads Number of threads libvpx will use to decode.
+   * @param threads Number of threads libgav1 will use to decode.
    * @param numInputBuffers Number of input buffers.
    * @param numOutputBuffers Number of output buffers.
    */
-  public LibvpxVideoRenderer(
+  public Libgav1VideoRenderer(
       long allowedJoiningTimeMs,
       @Nullable Handler eventHandler,
       @Nullable VideoRendererEventListener eventListener,
       int maxDroppedFramesToNotify,
-      @Nullable DrmSessionManager<ExoMediaCrypto> drmSessionManager,
-      boolean playClearSamplesWithoutKeys,
-      boolean disableLoopFilter,
-      boolean enableRowMultiThreadMode,
       int threads,
       int numInputBuffers,
       int numOutputBuffers) {
@@ -183,10 +125,8 @@ public class LibvpxVideoRenderer extends SimpleDecoderVideoRenderer {
         eventHandler,
         eventListener,
         maxDroppedFramesToNotify,
-        drmSessionManager,
-        playClearSamplesWithoutKeys);
-    this.disableLoopFilter = disableLoopFilter;
-    this.enableRowMultiThreadMode = enableRowMultiThreadMode;
+        /* drmSessionManager= */ null,
+        /* playClearSamplesWithoutKeys= */ false);
     this.threads = threads;
     this.numInputBuffers = numInputBuffers;
     this.numOutputBuffers = numOutputBuffers;
@@ -195,15 +135,11 @@ public class LibvpxVideoRenderer extends SimpleDecoderVideoRenderer {
   @Override
   protected int supportsFormatInternal(
       @Nullable DrmSessionManager<ExoMediaCrypto> drmSessionManager, Format format) {
-    if (!VpxLibrary.isAvailable() || !MimeTypes.VIDEO_VP9.equalsIgnoreCase(format.sampleMimeType)) {
+    if (!MimeTypes.VIDEO_AV1.equalsIgnoreCase(format.sampleMimeType)
+        || !Gav1Library.isAvailable()) {
       return FORMAT_UNSUPPORTED_TYPE;
     }
-    boolean drmIsSupported =
-        format.drmInitData == null
-            || VpxLibrary.matchesExpectedExoMediaCryptoType(format.exoMediaCryptoType)
-            || (format.exoMediaCryptoType == null
-                && supportsFormatDrm(drmSessionManager, format.drmInitData));
-    if (!drmIsSupported) {
+    if (!supportsFormatDrm(drmSessionManager, format.drmInitData)) {
       return FORMAT_UNSUPPORTED_DRM;
     }
     return FORMAT_HANDLED | ADAPTIVE_SEAMLESS;
@@ -216,38 +152,21 @@ public class LibvpxVideoRenderer extends SimpleDecoderVideoRenderer {
           ? extends VideoDecoderException>
       createDecoder(Format format, @Nullable ExoMediaCrypto mediaCrypto)
           throws VideoDecoderException {
-    TraceUtil.beginSection("createVpxDecoder");
+    TraceUtil.beginSection("createGav1Decoder");
     int initialInputBufferSize =
         format.maxInputSize != Format.NO_VALUE ? format.maxInputSize : DEFAULT_INPUT_BUFFER_SIZE;
-    decoder =
-        new VpxDecoder(
-            numInputBuffers,
-            numOutputBuffers,
-            initialInputBufferSize,
-            mediaCrypto,
-            disableLoopFilter,
-            enableRowMultiThreadMode,
-            threads);
+    Gav1Decoder decoder =
+        new Gav1Decoder(numInputBuffers, numOutputBuffers, initialInputBufferSize, threads);
+    this.decoder = decoder;
     TraceUtil.endSection();
     return decoder;
   }
 
   @Override
-  protected void renderOutputBuffer(
-      VideoDecoderOutputBuffer outputBuffer, long presentationTimeUs, Format outputFormat)
-      throws VideoDecoderException {
-    if (frameMetadataListener != null) {
-      frameMetadataListener.onVideoFrameAboutToBeRendered(
-          presentationTimeUs, System.nanoTime(), outputFormat, /* mediaFormat= */ null);
-    }
-    super.renderOutputBuffer(outputBuffer, presentationTimeUs, outputFormat);
-  }
-
-  @Override
   protected void renderOutputBufferToSurface(VideoDecoderOutputBuffer outputBuffer, Surface surface)
-      throws VpxDecoderException {
+      throws Gav1DecoderException {
     if (decoder == null) {
-      throw new VpxDecoderException(
+      throw new Gav1DecoderException(
           "Failed to render output buffer to surface: decoder is not initialized.");
     }
     decoder.renderToSurface(outputBuffer, surface);
@@ -269,8 +188,6 @@ public class LibvpxVideoRenderer extends SimpleDecoderVideoRenderer {
       setOutputSurface((Surface) message);
     } else if (messageType == C.MSG_SET_OUTPUT_BUFFER_RENDERER) {
       setOutputBufferRenderer((VideoDecoderOutputBufferRenderer) message);
-    } else if (messageType == C.MSG_SET_VIDEO_FRAME_METADATA_LISTENER) {
-      frameMetadataListener = (VideoFrameMetadataListener) message;
     } else {
       super.handleMessage(messageType, message);
     }
