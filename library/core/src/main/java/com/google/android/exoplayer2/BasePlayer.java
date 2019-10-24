@@ -29,7 +29,7 @@ public abstract class BasePlayer implements Player {
 
   @Override
   public final boolean isPlaying() {
-    return getPlaybackState() == Player.STATE_READY
+    return (getPlaybackState() == Player.STATE_READY || getPlaybackState() == Player.STATE_BUFFERING)
         && getPlayWhenReady()
         && getPlaybackSuppressionReason() == PLAYBACK_SUPPRESSION_REASON_NONE;
   }
