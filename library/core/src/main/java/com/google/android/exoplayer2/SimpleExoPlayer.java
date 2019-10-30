@@ -348,6 +348,7 @@ public class SimpleExoPlayer extends BasePlayer
   private boolean hasNotifiedFullWrongThreadWarning;
   @Nullable private PriorityTaskManager priorityTaskManager;
   private boolean isPriorityTaskManagerRegistered;
+  private boolean playerReleased;
 
   /**
    * @param context A {@link Context}.
@@ -454,8 +455,9 @@ public class SimpleExoPlayer extends BasePlayer
     if (drmSessionManager instanceof DefaultDrmSessionManager) {
       ((DefaultDrmSessionManager) drmSessionManager).addListener(eventHandler, analyticsCollector);
     }
-    audioBecomingNoisyManager = new AudioBecomingNoisyManager(context, componentListener);
-    audioFocusManager = new AudioFocusManager(context, componentListener);
+    audioBecomingNoisyManager =
+        new AudioBecomingNoisyManager(context, eventHandler, componentListener);
+    audioFocusManager = new AudioFocusManager(context, eventHandler, componentListener);
     wakeLockManager = new WakeLockManager(context);
   }
 
@@ -640,6 +642,9 @@ public class SimpleExoPlayer extends BasePlayer
   @Override
   public void setAudioAttributes(AudioAttributes audioAttributes, boolean handleAudioFocus) {
     verifyApplicationThread();
+    if (playerReleased) {
+      return;
+    }
     if (!Util.areEqual(this.audioAttributes, audioAttributes)) {
       this.audioAttributes = audioAttributes;
       for (Renderer renderer : renderers) {
@@ -776,6 +781,10 @@ public class SimpleExoPlayer extends BasePlayer
    * @param handleAudioBecomingNoisy True if the player should handle audio becoming noisy.
    */
   public void setHandleAudioBecomingNoisy(boolean handleAudioBecomingNoisy) {
+    verifyApplicationThread();
+    if (playerReleased) {
+      return;
+    }
     audioBecomingNoisyManager.setEnabled(handleAudioBecomingNoisy);
   }
 
@@ -1256,6 +1265,7 @@ public class SimpleExoPlayer extends BasePlayer
   @Override
   public void release() {
     verifyApplicationThread();
+    audioBecomingNoisyManager.setEnabled(false);
     audioFocusManager.handleStop();
     wakeLockManager.setStayAwake(false);
     player.release();
@@ -1276,6 +1286,7 @@ public class SimpleExoPlayer extends BasePlayer
     }
     bandwidthMeter.removeEventListener(analyticsCollector);
     currentCues = Collections.emptyList();
+    playerReleased = true;
   }
 
   @Override

@@ -426,11 +426,32 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
     } else if (codecInfo.isSeamlessAdaptationSupported(
         oldFormat, newFormat, /* isNewFormatComplete= */ true)) {
       return KEEP_CODEC_RESULT_YES_WITHOUT_RECONFIGURATION;
-    } else if (areCodecConfigurationCompatible(oldFormat, newFormat)) {
+    } else if (canKeepCodecWithFlush(oldFormat, newFormat)) {
       return KEEP_CODEC_RESULT_YES_WITH_FLUSH;
     } else {
       return KEEP_CODEC_RESULT_NO;
     }
+  }
+
+  /**
+   * Returns whether the codec can be flushed and reused when switching to a new format. Reuse is
+   * generally possible when the codec would be configured in an identical way after the format
+   * change (excluding {@link MediaFormat#KEY_MAX_INPUT_SIZE} and configuration that does not come
+   * from the {@link Format}).
+   *
+   * @param oldFormat The first format.
+   * @param newFormat The second format.
+   * @return Whether the codec can be flushed and reused when switching to a new format.
+   */
+  protected boolean canKeepCodecWithFlush(Format oldFormat, Format newFormat) {
+    // Flush and reuse the codec if the audio format and initialization data matches. For Opus, we
+    // don't flush and reuse the codec because the decoder may discard samples after flushing, which
+    // would result in audio being dropped just after a stream change (see [Internal: b/143450854]).
+    return Util.areEqual(oldFormat.sampleMimeType, newFormat.sampleMimeType)
+        && oldFormat.channelCount == newFormat.channelCount
+        && oldFormat.sampleRate == newFormat.sampleRate
+        && oldFormat.initializationDataEquals(newFormat)
+        && !MimeTypes.AUDIO_OPUS.equals(oldFormat.sampleMimeType);
   }
 
   @Override
@@ -474,22 +495,22 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
   }
 
   @Override
-  protected void onOutputFormatChanged(MediaCodec codec, MediaFormat outputFormat)
+  protected void onOutputFormatChanged(MediaCodec codec, MediaFormat outputMediaFormat)
       throws ExoPlaybackException {
     @C.Encoding int encoding;
-    MediaFormat format;
+    MediaFormat mediaFormat;
     if (passthroughMediaFormat != null) {
-      format = passthroughMediaFormat;
+      mediaFormat = passthroughMediaFormat;
       encoding =
           getPassthroughEncoding(
-              format.getInteger(MediaFormat.KEY_CHANNEL_COUNT),
-              format.getString(MediaFormat.KEY_MIME));
+              mediaFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT),
+              mediaFormat.getString(MediaFormat.KEY_MIME));
     } else {
-      format = outputFormat;
+      mediaFormat = outputMediaFormat;
       encoding = pcmEncoding;
     }
-    int channelCount = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
-    int sampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+    int channelCount = mediaFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+    int sampleRate = mediaFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
     int[] channelMap;
     if (codecNeedsDiscardChannelsWorkaround && channelCount == 6 && this.channelCount < 6) {
       channelMap = new int[this.channelCount];
@@ -769,7 +790,7 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
    * will allow possible adaptation to other compatible formats in {@code streamFormats}.
    *
    * @param codecInfo A {@link MediaCodecInfo} describing the decoder.
-   * @param format The format for which the codec is being configured.
+   * @param format The {@link Format} for which the codec is being configured.
    * @param streamFormats The possible stream formats.
    * @return A suitable maximum input size.
    */
@@ -791,10 +812,10 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
   }
 
   /**
-   * Returns a maximum input buffer size for a given format.
+   * Returns a maximum input buffer size for a given {@link Format}.
    *
    * @param codecInfo A {@link MediaCodecInfo} describing the decoder.
-   * @param format The format.
+   * @param format The {@link Format}.
    * @return A maximum input buffer size in bytes, or {@link Format#NO_VALUE} if a maximum could not
    *     be determined.
    */
@@ -812,33 +833,15 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
   }
 
   /**
-   * Returns whether two {@link Format}s will cause the same codec to be configured in an identical
-   * way, excluding {@link MediaFormat#KEY_MAX_INPUT_SIZE} and configuration that does not come from
-   * the {@link Format}.
-   *
-   * @param oldFormat The first format.
-   * @param newFormat The second format.
-   * @return Whether the two formats will cause a codec to be configured in an identical way,
-   *     excluding {@link MediaFormat#KEY_MAX_INPUT_SIZE} and configuration that does not come from
-   *     the {@link Format}.
-   */
-  protected boolean areCodecConfigurationCompatible(Format oldFormat, Format newFormat) {
-    return Util.areEqual(oldFormat.sampleMimeType, newFormat.sampleMimeType)
-        && oldFormat.channelCount == newFormat.channelCount
-        && oldFormat.sampleRate == newFormat.sampleRate
-        && oldFormat.initializationDataEquals(newFormat);
-  }
-
-  /**
    * Returns the framework {@link MediaFormat} that can be used to configure a {@link MediaCodec}
    * for decoding the given {@link Format} for playback.
    *
-   * @param format The format of the media.
+   * @param format The {@link Format} of the media.
    * @param codecMimeType The MIME type handled by the codec.
    * @param codecMaxInputSize The maximum input size supported by the codec.
    * @param codecOperatingRate The codec operating rate, or {@link #CODEC_OPERATING_RATE_UNSET} if
    *     no codec operating rate should be set.
-   * @return The framework media format.
+   * @return The framework {@link MediaFormat}.
    */
   @SuppressLint("InlinedApi")
   protected MediaFormat getMediaFormat(

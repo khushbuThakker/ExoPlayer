@@ -2,6 +2,8 @@
 
 ### dev-v2 (not yet released) ###
 
+* MediaSession extension: Update shuffle and repeat modes when playback state
+  is invalidated ([#6582](https://github.com/google/ExoPlayer/issues/6582)).
 * AV1 extension: Uses libgav1 to decode AV1 videos. Android 10 includes an AV1
   decoder, but the older versions of Android require this extension for playback
   of AV1 streams ([#3353](https://github.com/google/ExoPlayer/issues/3353)).
@@ -40,7 +42,6 @@
   even if they are listed lower in the `MediaCodecList`.
 * Add a workaround for broken raw audio decoding on Oppo R9
   ([#5782](https://github.com/google/ExoPlayer/issues/5782)).
-* Add VR player demo.
 * Wrap decoder exceptions in a new `DecoderException` class and report as
   renderer error.
 * Do not pass the manifest to callbacks of `Player.EventListener` and
@@ -86,6 +87,8 @@
     `VideoDecoderOutputBufferRenderer`, instead of `VideoDecoderSurfaceView`.
 * Add automatic audio becoming noisy handling to `SimpleExoPlayer`,
   available through `SimpleExoPlayer.setHandleAudioBecomingNoisy`.
+* Post `AudioFocusManager.onAudioFocusChange` events to eventHandler, avoiding
+  multithreaded access to the player or audio focus manager.
 * Add `Timeline.Window.isLive` to indicate that a window is a live stream
   ([#2668](https://github.com/google/ExoPlayer/issues/2668) and
   [#5973](https://github.com/google/ExoPlayer/issues/5973)).
@@ -93,7 +96,15 @@
   fragment) ([#6470](https://github.com/google/ExoPlayer/issues/6470)).
 * Add `MediaPeriod.isLoading` to improve `Player.isLoading` state.
 * Make show and hide player controls accessible for TalkBack in `PlayerView`.
+* Add workaround to avoid truncating MP3 live streams with ICY metadata and
+  introductions that have a seeking header
+  ([#6537](https://github.com/google/ExoPlayer/issues/6537),
+  [#6315](https://github.com/google/ExoPlayer/issues/6315) and
+  [#5658](https://github.com/google/ExoPlayer/issues/5658)).
 * Pass the codec output `MediaFormat` to `VideoFrameMetadataListener`.
+* Deprecate the GVR extension.
+* Fix the start of audio getting truncated when transitioning to a new
+  item in a playlist of opus streams.
 
 ### 2.10.6 (2019-10-17) ###
 

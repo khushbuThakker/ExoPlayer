@@ -205,7 +205,7 @@ public class PlayerActivity extends AppCompatActivity
       DefaultTrackSelector.ParametersBuilder builder =
           new DefaultTrackSelector.ParametersBuilder(/* context= */ this);
       boolean tunneling = intent.getBooleanExtra(TUNNELING, false);
-      if (tunneling) {
+      if (Util.SDK_INT >= 21 && tunneling) {
         builder.setTunnelingAudioSessionId(C.generateAudioSessionIdV21(/* context= */ this));
       }
       trackSelectorParameters = builder.build();
