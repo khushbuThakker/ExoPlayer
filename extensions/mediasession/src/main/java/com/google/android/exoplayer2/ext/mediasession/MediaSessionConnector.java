@@ -30,6 +30,7 @@ import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Pair;
+import android.view.KeyEvent;
 import androidx.annotation.LongDef;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
@@ -338,6 +339,21 @@ public final class MediaSessionConnector {
     void onSetRating(Player player, RatingCompat rating, Bundle extras);
   }
 
+  /** Handles requests for enabling or disabling captions. */
+  public interface CaptionCallback extends CommandReceiver {
+
+    /** See {@link MediaSessionCompat.Callback#onSetCaptioningEnabled(boolean)}. */
+    void onSetCaptioningEnabled(Player player, boolean enabled);
+
+    /**
+     * Returns whether the media currently being played has captions.
+     *
+     * <p>This method is called each time the media session playback state needs to be updated and
+     * published upon a player state change.
+     */
+    boolean hasCaptions(Player player);
+  }
+
   /** Handles a media button event. */
   public interface MediaButtonEventHandler {
     /**
@@ -419,6 +435,7 @@ public final class MediaSessionConnector {
   @Nullable private QueueNavigator queueNavigator;
   @Nullable private QueueEditor queueEditor;
   @Nullable private RatingCallback ratingCallback;
+  @Nullable private CaptionCallback captionCallback;
   @Nullable private MediaButtonEventHandler mediaButtonEventHandler;
 
   private long enabledPlaybackActions;
@@ -499,6 +516,17 @@ public final class MediaSessionConnector {
   /**
    * Sets the {@link MediaButtonEventHandler}. Pass {@code null} if the media button event should be
    * handled by {@link MediaSessionCompat.Callback#onMediaButtonEvent(Intent)}.
+   *
+   * <p>Please note that prior to API 21 MediaButton events are not delivered to the {@link
+   * MediaSessionCompat}. Instead they are delivered as key events (see <a
+   * href="https://developer.android.com/guide/topics/media-apps/mediabuttons">'Responding to media
+   * buttons'</a>). In an {@link android.app.Activity Activity}, media button events arrive at the
+   * {@link android.app.Activity#dispatchKeyEvent(KeyEvent)} method.
+   *
+   * <p>If you are running the player in a foreground service (prior to API 21), you can create an
+   * intent filter and handle the {@code android.intent.action.MEDIA_BUTTON} action yourself. See <a
+   * href="https://developer.android.com/reference/androidx/media/session/MediaButtonReceiver#service-handling-action_media_button">
+   * Service handling ACTION_MEDIA_BUTTON</a> for more information.
    *
    * @param mediaButtonEventHandler The {@link MediaButtonEventHandler}, or null to let the event be
    *     handled by {@link MediaSessionCompat.Callback#onMediaButtonEvent(Intent)}.
@@ -594,11 +622,24 @@ public final class MediaSessionConnector {
    *
    * @param ratingCallback The rating callback.
    */
-  public void setRatingCallback(RatingCallback ratingCallback) {
+  public void setRatingCallback(@Nullable RatingCallback ratingCallback) {
     if (this.ratingCallback != ratingCallback) {
       unregisterCommandReceiver(this.ratingCallback);
       this.ratingCallback = ratingCallback;
       registerCommandReceiver(this.ratingCallback);
+    }
+  }
+
+  /**
+   * Sets the {@link CaptionCallback} to handle requests to enable or disable captions.
+   *
+   * @param captionCallback The caption callback.
+   */
+  public void setCaptionCallback(@Nullable CaptionCallback captionCallback) {
+    if (this.captionCallback != captionCallback) {
+      unregisterCommandReceiver(this.captionCallback);
+      this.captionCallback = captionCallback;
+      registerCommandReceiver(this.captionCallback);
     }
   }
 
@@ -831,12 +872,14 @@ public final class MediaSessionConnector {
     boolean enableRewind = false;
     boolean enableFastForward = false;
     boolean enableSetRating = false;
+    boolean enableSetCaptioningEnabled = false;
     Timeline timeline = player.getCurrentTimeline();
     if (!timeline.isEmpty() && !player.isPlayingAd()) {
       enableSeeking = player.isCurrentWindowSeekable();
       enableRewind = enableSeeking && rewindMs > 0;
       enableFastForward = enableSeeking && fastForwardMs > 0;
-      enableSetRating = true;
+      enableSetRating = ratingCallback != null;
+      enableSetCaptioningEnabled = captionCallback != null && captionCallback.hasCaptions(player);
     }
 
     long playbackActions = BASE_PLAYBACK_ACTIONS;
@@ -856,8 +899,11 @@ public final class MediaSessionConnector {
       actions |=
           (QueueNavigator.ACTIONS & queueNavigator.getSupportedQueueNavigatorActions(player));
     }
-    if (ratingCallback != null && enableSetRating) {
+    if (enableSetRating) {
       actions |= PlaybackStateCompat.ACTION_SET_RATING;
+    }
+    if (enableSetCaptioningEnabled) {
+      actions |= PlaybackStateCompat.ACTION_SET_CAPTIONING_ENABLED;
     }
     return actions;
   }
@@ -887,6 +933,13 @@ public final class MediaSessionConnector {
       expression = {"player", "ratingCallback"})
   private boolean canDispatchSetRating() {
     return player != null && ratingCallback != null;
+  }
+
+  @EnsuresNonNullIf(
+      result = true,
+      expression = {"player", "captionCallback"})
+  private boolean canDispatchSetCaptioningEnabled() {
+    return player != null && captionCallback != null;
   }
 
   @EnsuresNonNullIf(
@@ -1338,6 +1391,13 @@ public final class MediaSessionConnector {
     public void onRemoveQueueItem(MediaDescriptionCompat description) {
       if (canDispatchQueueEdit()) {
         queueEditor.onRemoveQueueItem(player, description);
+      }
+    }
+
+    @Override
+    public void onSetCaptioningEnabled(boolean enabled) {
+      if (canDispatchSetCaptioningEnabled()) {
+        captionCallback.onSetCaptioningEnabled(player, enabled);
       }
     }
 

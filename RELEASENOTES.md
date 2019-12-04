@@ -2,14 +2,26 @@
 
 ### dev-v2 (not yet released) ###
 
-* Video tunneling: Fix renderer end-of-stream with `OnFrameRenderedListener`
-  from API 23, tunneled renderer must send a special timestamp on EOS.
-  Previously the EOS was reported when the input stream reached EOS.
+* Add Java FLAC extractor
+  ([#6406](https://github.com/google/ExoPlayer/issues/6406)).
+  This extractor does not support seeking and live streams. If
+  `DefaultExtractorsFactory` is used, this extractor is only used if the FLAC
+  extension is not loaded.
 * Require an end time or duration for SubRip (SRT) and SubStation Alpha
   (SSA/ASS) subtitles. This applies to both sidecar files & subtitles
   [embedded in Matroska streams](https://matroska.org/technical/specs/subtitles/index.html).
-* Use `ExoMediaDrm.Provider` in `OfflineLicenseHelper` to avoid `ExoMediaDrm`
-  leaks ([#4721](https://github.com/google/ExoPlayer/issues/4721)).
+* Reconfigure audio sink when PCM encoding changes
+  ([#6601](https://github.com/google/ExoPlayer/issues/6601)).
+* Make `MediaSourceEventListener.LoadEventInfo` and
+  `MediaSourceEventListener.MediaLoadData` top-level classes.
+* Rename `MediaCodecRenderer.onOutputFormatChanged` to
+  `MediaCodecRenderer.onOutputMediaFormatChanged`, further
+  clarifying the distinction between `Format` and `MediaFormat`.
+* Downloads: Merge downloads in `SegmentDownloader` to improve overall download
+  speed ([#5978](https://github.com/google/ExoPlayer/issues/5978)).
+* Allow `AdtsExtractor` to encounter EoF when calculating average frame size
+  ([#6700](https://github.com/google/ExoPlayer/issues/6700)).
+* Make media session connector dispatch ACTION_SET_CAPTIONING_ENABLED.
 
 ### 2.11.0 (not yet released) ###
 
@@ -41,15 +53,25 @@
   * Fix issue where player errors are thrown too early at playlist transitions
     ([#5407](https://github.com/google/ExoPlayer/issues/5407)).
 * DRM:
-  * Inject `DrmSessionManager` into the `MediaSources` instead of `Renderers`
+  * Inject `DrmSessionManager` into the `MediaSources` instead of `Renderers`.
+    This allows each `MediaSource` in a `ConcatenatingMediaSource` to use a
+    different `DrmSessionManager`
     ([#5619](https://github.com/google/ExoPlayer/issues/5619)).
-  * Add a `DefaultDrmSessionManager.Builder`.
-  * Add support for the use of secure decoders in clear sections of content
-    ([#4867](https://github.com/google/ExoPlayer/issues/4867)).
+  * Add `DefaultDrmSessionManager.Builder`, and remove
+    `DefaultDrmSessionManager` static factory methods that leaked
+    `ExoMediaDrm` instances
+    ([#4721](https://github.com/google/ExoPlayer/issues/4721)).
+  * Add support for the use of secure decoders when playing clear content
+    ([#4867](https://github.com/google/ExoPlayer/issues/4867)). This can
+    be enabled using `DefaultDrmSessionManager.Builder`'s
+    `setUseDrmSessionsForClearContent` method.
   * Add support for custom `LoadErrorHandlingPolicies` in key and provisioning
-    requests ([#6334](https://github.com/google/ExoPlayer/issues/6334)).
-  * Remove `DefaultDrmSessionManager` factory methods that leak `ExoMediaDrm`
-    instances ([#4721](https://github.com/google/ExoPlayer/issues/4721)).
+    requests ([#6334](https://github.com/google/ExoPlayer/issues/6334)). Custom
+    policies can be passed via `DefaultDrmSessionManager.Builder`'s
+    `setLoadErrorHandlingPolicy` method.
+  * Use `ExoMediaDrm.Provider` in `OfflineLicenseHelper` to avoid leaking
+    `ExoMediaDrm` instances
+    ([#4721](https://github.com/google/ExoPlayer/issues/4721)).
 * Track selection:
   * Update `DefaultTrackSelector` to set a viewport constraint for the default
     display by default.
@@ -67,24 +89,28 @@
     configuration of the audio capture policy.
 * Video:
   * Pass the codec output `MediaFormat` to `VideoFrameMetadataListener`.
-  * Support out-of-band HDR10+ metadata for VP9 in WebM/Matroska.
+  * Fix byte order of HDR10+ static metadata to match CTA-861.3.
+  * Support out-of-band HDR10+ dynamic metadata for VP9 in WebM/Matroska.
   * Assume that protected content requires a secure decoder when evaluating
     whether `MediaCodecVideoRenderer` supports a given video format
     ([#5568](https://github.com/google/ExoPlayer/issues/5568)).
   * Fix Dolby Vision fallback to AVC and HEVC.
+  * Fix early end-of-stream detection when using video tunneling, on API level
+    23 and above.
 * Audio:
-  * Fix E-AC3 JOC passthrough playback failing to initialize due to incorrect
-    channel count check.
-  * Handle new signaling for E-AC3 JOC audio in DASH
-    ([#6636](https://github.com/google/ExoPlayer/issues/6636)).
   * Fix the start of audio getting truncated when transitioning to a new
     item in a playlist of Opus streams.
   * Workaround broken raw audio decoding on Oppo R9
     ([#5782](https://github.com/google/ExoPlayer/issues/5782)).
+  * Reconfigure audio sink when PCM encoding changes
+    ([#6601](https://github.com/google/ExoPlayer/issues/6601)).
 * UI:
   * Make showing and hiding player controls accessible to TalkBack in
     `PlayerView`.
   * Rename `spherical_view` surface type to `spherical_gl_surface_view`.
+  * Make it easier to override the shuffle, repeat, fullscreen, VR and small
+    notification icon assets
+    ([#6709](https://github.com/google/ExoPlayer/issues/6709)).
 * Analytics:
   * Remove `AnalyticsCollector.Factory`. Instances should be created directly,
     and the `Player` should be set by calling `AnalyticsCollector.setPlayer`.
@@ -100,9 +126,11 @@
     fragment) ([#6470](https://github.com/google/ExoPlayer/issues/6470)).
 * DASH: Support negative @r values in segment timelines
   ([#1787](https://github.com/google/ExoPlayer/issues/1787)).
-* HLS: Fix issue where streams could get stuck in an infinite buffering state
-  after a postroll ad
-  ([#6314](https://github.com/google/ExoPlayer/issues/6314)).
+* HLS:
+  * Use peak bitrate rather than average bitrate for adaptive track selection.
+  * Fix issue where streams could get stuck in an infinite buffering state
+    after a postroll ad
+    ([#6314](https://github.com/google/ExoPlayer/issues/6314)).
 * AV1 extension:
   * New in this release. The AV1 extension allows use of the
     [libgav1 software decoder](https://chromium.googlesource.com/codecs/libgav1/)
@@ -140,10 +168,28 @@
     [Cast demo app](https://github.com/google/ExoPlayer/tree/dev-v2/demos/cast).
 * TestUtils: Publish the `testutils` module to simplify unit testing with
   ExoPlayer ([#6267](https://github.com/google/ExoPlayer/issues/6267)).
-* Downloads: Merge downloads in `SegmentDownloader` to improve overall download
-  speed ([#5978](https://github.com/google/ExoPlayer/issues/5978)).
+* IMA extension: Remove `AdsManager` listeners on release to avoid leaking an
+  `AdEventListener` provided by the app
+  ([#6687](https://github.com/google/ExoPlayer/issues/6687)).
 
-### 2.10.7 (2019-11-12) ###
+### 2.10.8 (2019-11-19) ###
+
+* E-AC3 JOC
+  * Handle new signaling in DASH manifests
+    ([#6636](https://github.com/google/ExoPlayer/issues/6636)).
+  * Fix E-AC3 JOC passthrough playback failing to initialize due to incorrect
+    channel count check.
+* FLAC
+  * Fix sniffing for some FLAC streams.
+  * Fix FLAC `Format.bitrate` values.
+* Parse ALAC channel count and sample rate information from a more robust source
+  when contained in MP4
+  ([#6648](https://github.com/google/ExoPlayer/issues/6648)).
+* Fix seeking into multi-period content in the edge case that the period
+  containing the seek position has just been removed
+  ([#6641](https://github.com/google/ExoPlayer/issues/6641)).
+
+### 2.10.7 (2019-11-06) ###
 
 * HLS: Fix detection of Dolby Atmos to match the HLS authoring specification.
 * MediaSession extension: Update shuffle and repeat modes when playback state

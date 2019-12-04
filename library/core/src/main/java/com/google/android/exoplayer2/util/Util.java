@@ -366,6 +366,17 @@ public final class Util {
         /* length= */ second.length);
     return concatenation;
   }
+
+  /**
+   * Creates a {@link Handler} on the current {@link Looper} thread.
+   *
+   * <p>If the current thread doesn't have a {@link Looper}, the application's main thread {@link
+   * Looper} is used.
+   */
+  public static Handler createHandler() {
+    return createHandler(/* callback= */ null);
+  }
+
   /**
    * Creates a {@link Handler} with the specified {@link Handler.Callback} on the current {@link
    * Looper} thread. The method accepts partially initialized objects as callback under the
@@ -375,10 +386,11 @@ public final class Util {
    * <p>If the current thread doesn't have a {@link Looper}, the application's main thread {@link
    * Looper} is used.
    *
-   * @param callback A {@link Handler.Callback}. May be a partially initialized class.
+   * @param callback A {@link Handler.Callback}. May be a partially initialized class, or null if no
+   *     callback is required.
    * @return A {@link Handler} with the specified callback on the current {@link Looper} thread.
    */
-  public static Handler createHandler(Handler.@UnknownInitialization Callback callback) {
+  public static Handler createHandler(@Nullable Handler.@UnknownInitialization Callback callback) {
     return createHandler(getLooper(), callback);
   }
 
@@ -389,12 +401,13 @@ public final class Util {
    * initialized.
    *
    * @param looper A {@link Looper} to run the callback on.
-   * @param callback A {@link Handler.Callback}. May be a partially initialized class.
+   * @param callback A {@link Handler.Callback}. May be a partially initialized class, or null if no
+   *     callback is required.
    * @return A {@link Handler} with the specified callback on the current {@link Looper} thread.
    */
   @SuppressWarnings({"nullness:argument.type.incompatible", "nullness:return.type.incompatible"})
   public static Handler createHandler(
-      Looper looper, Handler.@UnknownInitialization Callback callback) {
+      Looper looper, @Nullable Handler.@UnknownInitialization Callback callback) {
     return new Handler(looper, callback);
   }
 
@@ -714,10 +727,28 @@ public final class Util {
   }
 
   /**
+   * Returns the index of the first occurrence of {@code value} in {@code array}, or {@link
+   * C#INDEX_UNSET} if {@code value} is not contained in {@code array}.
+   *
+   * @param array The array to search.
+   * @param value The value to search for.
+   * @return The index of the first occurrence of value in {@code array}, or {@link C#INDEX_UNSET}
+   *     if {@code value} is not contained in {@code array}.
+   */
+  public static int linearSearch(int[] array, int value) {
+    for (int i = 0; i < array.length; i++) {
+      if (array[i] == value) {
+        return i;
+      }
+    }
+    return C.INDEX_UNSET;
+  }
+
+  /**
    * Returns the index of the largest element in {@code array} that is less than (or optionally
    * equal to) a specified {@code value}.
-   * <p>
-   * The search is performed using a binary search algorithm, so the array must be sorted. If the
+   *
+   * <p>The search is performed using a binary search algorithm, so the array must be sorted. If the
    * array contains multiple elements equal to {@code value} and {@code inclusive} is true, the
    * index of the first one will be returned.
    *
@@ -731,8 +762,8 @@ public final class Util {
    * @return The index of the largest element in {@code array} that is less than (or optionally
    *     equal to) {@code value}.
    */
-  public static int binarySearchFloor(int[] array, int value, boolean inclusive,
-      boolean stayInBounds) {
+  public static int binarySearchFloor(
+      int[] array, int value, boolean inclusive, boolean stayInBounds) {
     int index = Arrays.binarySearch(array, value);
     if (index < 0) {
       index = -(index + 2);
@@ -1970,7 +2001,7 @@ public final class Util {
       @Nullable DrmSessionManager<FrameworkMediaCrypto> drmSessionManager) {
     Renderer[] renderers =
         renderersFactory.createRenderers(
-            new Handler(),
+            Util.createHandler(),
             new VideoRendererEventListener() {},
             new AudioRendererEventListener() {},
             (cues) -> {},
