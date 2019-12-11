@@ -4,14 +4,8 @@
 
 * Add Java FLAC extractor
   ([#6406](https://github.com/google/ExoPlayer/issues/6406)).
-  This extractor does not support seeking and live streams. If
-  `DefaultExtractorsFactory` is used, this extractor is only used if the FLAC
+  If `DefaultExtractorsFactory` is used, this extractor is only used if the FLAC
   extension is not loaded.
-* Require an end time or duration for SubRip (SRT) and SubStation Alpha
-  (SSA/ASS) subtitles. This applies to both sidecar files & subtitles
-  [embedded in Matroska streams](https://matroska.org/technical/specs/subtitles/index.html).
-* Reconfigure audio sink when PCM encoding changes
-  ([#6601](https://github.com/google/ExoPlayer/issues/6601)).
 * Make `MediaSourceEventListener.LoadEventInfo` and
   `MediaSourceEventListener.MediaLoadData` top-level classes.
 * Rename `MediaCodecRenderer.onOutputFormatChanged` to
@@ -19,11 +13,19 @@
   clarifying the distinction between `Format` and `MediaFormat`.
 * Downloads: Merge downloads in `SegmentDownloader` to improve overall download
   speed ([#5978](https://github.com/google/ExoPlayer/issues/5978)).
-* Allow `AdtsExtractor` to encounter EoF when calculating average frame size
-  ([#6700](https://github.com/google/ExoPlayer/issues/6700)).
-* Make media session connector dispatch ACTION_SET_CAPTIONING_ENABLED.
+* In MP4 streams, store the Android capture frame rate only in
+  `Format.metadata`. `Format.frameRate` now stores the calculated frame rate.
+* Add `play` and `pause` methods to `Player`.
+* Upgrade Truth dependency from 0.44 to 1.0.
+* Upgrade to JUnit 4.13-rc-2.
+* Add support for attaching DRM sessions to clear content in the demo app.
+* UI: Exclude `DefaultTimeBar` region from system gesture detection
+  ([#6685](https://github.com/google/ExoPlayer/issues/6685)).
+* Add `SpannedSubject` to testutils, for assertions on
+  [Span-styled text]( https://developer.android.com/guide/topics/text/spans)
+  (e.g. subtitles).
 
-### 2.11.0 (not yet released) ###
+### 2.11.0 (2019-12-11) ###
 
 * Core library:
   * Replace `ExoPlayerFactory` by `SimpleExoPlayer.Builder` and
@@ -52,6 +54,7 @@
   * Add `MediaPeriod.isLoading` to improve `Player.isLoading` state.
   * Fix issue where player errors are thrown too early at playlist transitions
     ([#5407](https://github.com/google/ExoPlayer/issues/5407)).
+  * Add `Format` and renderer support flags to renderer `ExoPlaybackException`s.
 * DRM:
   * Inject `DrmSessionManager` into the `MediaSources` instead of `Renderers`.
     This allows each `MediaSource` in a `ConcatenatingMediaSource` to use a
@@ -97,6 +100,9 @@
   * Fix Dolby Vision fallback to AVC and HEVC.
   * Fix early end-of-stream detection when using video tunneling, on API level
     23 and above.
+  * Fix an issue where a keyframe was rendered rather than skipped when
+    performing an exact seek to a non-zero position close to the start of the
+    stream.
 * Audio:
   * Fix the start of audio getting truncated when transitioning to a new
     item in a playlist of Opus streams.
@@ -104,6 +110,14 @@
     ([#5782](https://github.com/google/ExoPlayer/issues/5782)).
   * Reconfigure audio sink when PCM encoding changes
     ([#6601](https://github.com/google/ExoPlayer/issues/6601)).
+  * Allow `AdtsExtractor` to encounter EOF when calculating average frame size
+    ([#6700](https://github.com/google/ExoPlayer/issues/6700)).
+* Text:
+  * Add support for position and overlapping start/end times in SSA/ASS
+    subtitles ([#6320](https://github.com/google/ExoPlayer/issues/6320)).
+  * Require an end time or duration for SubRip (SRT) and SubStation Alpha
+    (SSA/ASS) subtitles. This applies to both sidecar files & subtitles
+    [embedded in Matroska streams](https://matroska.org/technical/specs/subtitles/index.html).
 * UI:
   * Make showing and hiding player controls accessible to TalkBack in
     `PlayerView`.
@@ -115,7 +129,7 @@
   * Remove `AnalyticsCollector.Factory`. Instances should be created directly,
     and the `Player` should be set by calling `AnalyticsCollector.setPlayer`.
   * Add `PlaybackStatsListener` to collect `PlaybackStats` for analysis and
-    analytics reporting (TODO: link to developer guide page/blog post).
+    analytics reporting.
 * DataSource
   * Add `DataSpec.httpRequestHeaders` to support setting per-request headers for
     HTTP and HTTPS.
@@ -131,6 +145,8 @@
   * Fix issue where streams could get stuck in an infinite buffering state
     after a postroll ad
     ([#6314](https://github.com/google/ExoPlayer/issues/6314)).
+* Matroska: Support lacing in Blocks
+  ([#3026](https://github.com/google/ExoPlayer/issues/3026)).
 * AV1 extension:
   * New in this release. The AV1 extension allows use of the
     [libgav1 software decoder](https://chromium.googlesource.com/codecs/libgav1/)
@@ -144,28 +160,27 @@
     `C.MSG_SET_OUTPUT_BUFFER_RENDERER`.
   * Use `VideoDecoderRenderer` as an implementation of
     `VideoDecoderOutputBufferRenderer`, instead of `VideoDecoderSurfaceView`.
-* Flac extension:
-  * Update to use NDK r20.
-  * Fix build
-    ([#6601](https://github.com/google/ExoPlayer/issues/6601).
+* Flac extension: Update to use NDK r20.
+* Opus extension: Update to use NDK r20.
 * FFmpeg extension:
   * Update to use NDK r20.
   * Update to use FFmpeg version 4.2. It is necessary to rebuild the native part
     of the extension after this change, following the instructions in the
     extension's readme.
-* Opus extension: Update to use NDK r20.
+* MediaSession extension: Add `MediaSessionConnector.setCaptionCallback` to
+  support `ACTION_SET_CAPTIONING_ENABLED` events.
 * GVR extension: This extension is now deprecated.
-* Demo apps (TODO: update links to point to r2.11.0 tag):
-  * Add [SurfaceControl demo app](https://github.com/google/ExoPlayer/tree/dev-v2/demos/surface)
+* Demo apps:
+  * Add [SurfaceControl demo app](https://github.com/google/ExoPlayer/tree/r2.11.0/demos/surface)
     to show how to use the Android 10 `SurfaceControl` API with ExoPlayer
     ([#677](https://github.com/google/ExoPlayer/issues/677)).
   * Add support for subtitle files to the
-    [Main demo app](https://github.com/google/ExoPlayer/tree/dev-v2/demos/main)
+    [Main demo app](https://github.com/google/ExoPlayer/tree/r2.11.0/demos/main)
     ([#5523](https://github.com/google/ExoPlayer/issues/5523)).
   * Remove the IMA demo app. IMA functionality is demonstrated by the
-    [main demo app](https://github.com/google/ExoPlayer/tree/dev-v2/demos/main).
+    [main demo app](https://github.com/google/ExoPlayer/tree/r2.11.0/demos/main).
   * Add basic DRM support to the
-    [Cast demo app](https://github.com/google/ExoPlayer/tree/dev-v2/demos/cast).
+    [Cast demo app](https://github.com/google/ExoPlayer/tree/r2.11.0/demos/cast).
 * TestUtils: Publish the `testutils` module to simplify unit testing with
   ExoPlayer ([#6267](https://github.com/google/ExoPlayer/issues/6267)).
 * IMA extension: Remove `AdsManager` listeners on release to avoid leaking an
@@ -436,6 +451,7 @@
   * Update `TrackSelection.Factory` interface to support creating all track
     selections together.
   * Allow to specify a selection reason for a `SelectionOverride`.
+  * Select audio track based on system language if no preference is provided.
   * When no text language preference matches, only select forced text tracks
     whose language matches the selected audio language.
 * UI:

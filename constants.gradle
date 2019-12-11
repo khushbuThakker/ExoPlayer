@@ -19,10 +19,12 @@ project.ext {
     appTargetSdkVersion = 29
     targetSdkVersion = 28 // TODO: Bump once b/143232359 is resolved
     compileSdkVersion = 29
-    dexmakerVersion = '2.25.0'
-    mockitoVersion = '3.1.0'
+    dexmakerVersion = '2.21.0'
+    junitVersion = '4.13-rc-2'
+    guavaVersion = '23.5-android'
+    mockitoVersion = '2.25.0'
     robolectricVersion = '4.3.1'
-    autoValueVersion = '1.7'
+    autoValueVersion = '1.6'
     autoServiceVersion = '1.0-rc4'
     checkerframeworkVersion = '2.5.0'
     jsr305Version = '3.0.2'
@@ -35,7 +37,7 @@ project.ext {
     androidxTestJUnitVersion = '1.1.1'
     androidxTestRunnerVersion = '1.2.0'
     androidxTestRulesVersion = '1.2.0'
-    truthVersion = '0.44'
+    truthVersion = '1.0'
     modulePrefix = ':'
     if (gradle.ext.has('exoplayerModulePrefix')) {
         modulePrefix += gradle.ext.exoplayerModulePrefix

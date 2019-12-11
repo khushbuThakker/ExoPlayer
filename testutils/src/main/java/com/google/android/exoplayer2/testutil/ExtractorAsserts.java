@@ -152,7 +152,6 @@ public final class ExtractorAsserts {
     assertOutput(factory.create(), file, data, context, false, false, false, false);
   }
 
-  // TODO: Assert format metadata [Internal ref: b/144771011].
   /**
    * Asserts that {@code extractor} consumes {@code sampleFile} successfully and its output equals
    * to a prerecorded output dump file with the name {@code sampleFile} + "{@value
@@ -172,7 +171,7 @@ public final class ExtractorAsserts {
    * @throws IOException If reading from the input fails.
    * @throws InterruptedException If interrupted while reading from the input.
    */
-  private static FakeExtractorOutput assertOutput(
+  public static FakeExtractorOutput assertOutput(
       Extractor extractor,
       String file,
       byte[] data,

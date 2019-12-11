@@ -2298,7 +2298,7 @@ public final class ExoPlayerTest {
           @Override
           public void onTimelineChanged(Timeline timeline, int reason) {
             if (timeline.isEmpty()) {
-              playerReference.get().setPlayWhenReady(/* playWhenReady= */ false);
+              playerReference.get().pause();
             }
           }
 
@@ -3012,6 +3012,7 @@ public final class ExoPlayerTest {
     final long[] positionMs = {C.TIME_UNSET};
     ActionSchedule actionSchedule =
         new ActionSchedule.Builder("testSeekTo_windowIndexIsReset_deprecated")
+            .pause()
             .seek(/* windowIndex= */ 1, /* positionMs= */ C.TIME_UNSET)
             .waitForSeekProcessed()
             .playUntilPosition(/* windowIndex= */ 1, /* positionMs= */ 5000)
@@ -3053,6 +3054,7 @@ public final class ExoPlayerTest {
     final long[] positionMs = {C.TIME_UNSET};
     ActionSchedule actionSchedule =
         new ActionSchedule.Builder("testSeekTo_windowIndexIsReset")
+            .pause()
             .seek(/* windowIndex= */ 1, /* positionMs= */ C.TIME_UNSET)
             .waitForSeekProcessed()
             .playUntilPosition(/* windowIndex= */ 1, /* positionMs= */ 5000)
@@ -3060,7 +3062,7 @@ public final class ExoPlayerTest {
                 new PlayerRunnable() {
                   @Override
                   public void run(SimpleExoPlayer player) {
-                    player.setMediaItem(mediaSource, /* startPositionMs= */ 5000);
+                    player.setMediaSource(mediaSource, /* startPositionMs= */ 5000);
                     player.prepare();
                   }
                 })
