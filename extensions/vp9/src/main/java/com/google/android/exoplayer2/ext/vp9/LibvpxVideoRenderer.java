@@ -224,11 +224,10 @@ public class LibvpxVideoRenderer extends SimpleDecoderVideoRenderer {
   }
 
   @Override
-  @Capabilities
   protected int supportsFormatInternal(
       @Nullable DrmSessionManager<ExoMediaCrypto> drmSessionManager, Format format) {
     if (!VpxLibrary.isAvailable() || !MimeTypes.VIDEO_VP9.equalsIgnoreCase(format.sampleMimeType)) {
-      return RendererCapabilities.create(FORMAT_UNSUPPORTED_TYPE);
+      return FORMAT_UNSUPPORTED_TYPE;
     }
     boolean drmIsSupported =
         format.drmInitData == null
@@ -236,9 +235,9 @@ public class LibvpxVideoRenderer extends SimpleDecoderVideoRenderer {
             || (format.exoMediaCryptoType == null
                 && supportsFormatDrm(drmSessionManager, format.drmInitData));
     if (!drmIsSupported) {
-      return RendererCapabilities.create(FORMAT_UNSUPPORTED_DRM);
+      return FORMAT_UNSUPPORTED_DRM;
     }
-    return RendererCapabilities.create(FORMAT_HANDLED, ADAPTIVE_SEAMLESS, TUNNELING_NOT_SUPPORTED);
+    return FORMAT_HANDLED | ADAPTIVE_SEAMLESS;
   }
 
   @Override

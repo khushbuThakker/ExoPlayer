@@ -29,7 +29,7 @@ fi
 common_params="--disable-examples --disable-docs --enable-realtime-only"
 common_params+=" --disable-vp8 --disable-vp9-encoder --disable-webm-io"
 common_params+=" --disable-libyuv --disable-runtime-cpu-detect"
-common_params+=" --enable-external-build"
+common_params+=" --enable-external-build --enable-vp9-highbitdepth"
 
 # configuration parameters for various architectures
 arch[0]="armeabi-v7a"
