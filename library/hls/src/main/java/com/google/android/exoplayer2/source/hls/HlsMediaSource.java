@@ -98,7 +98,6 @@ public final class HlsMediaSource extends BaseMediaSource
     private LoadErrorHandlingPolicy loadErrorHandlingPolicy;
     private boolean allowChunklessPreparation;
     private long LowLatency;
-    @HlsMetadataType private int metadataType;
     @MetadataType private int metadataType;
     private boolean useSessionKeys;
     private boolean isCreateCalled;
