@@ -37,6 +37,18 @@
 * Support "twos" codec (big endian PCM) in MP4
   ([#5789](https://github.com/google/ExoPlayer/issues/5789)).
 * WAV: Support IMA ADPCM encoded data.
+* Show ad group markers in `DefaultTimeBar` even if they are after the end of
+  the current window
+  ([#6552](https://github.com/google/ExoPlayer/issues/6552)).
+* WAV:
+  * Support IMA ADPCM encoded data.
+  * Improve support for G.711 A-law and mu-law encoded data.
+* Fix MKV subtitles to disappear when intended instead of lasting until the
+  next cue ([#6833](https://github.com/google/ExoPlayer/issues/6833)).
+* Parse \<ruby\> and \<rt\> tags in WebVTT subtitles (rendering is coming
+  later).
+* Parse `text-combine-upright` CSS property (i.e. tate-chu-yoko) in WebVTT
+  subtitles (rendering is coming later).
 
 ### 2.11.1 (2019-12-20) ###
 

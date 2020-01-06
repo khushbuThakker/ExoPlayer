@@ -1431,8 +1431,6 @@ public final class Util {
       case C.ENCODING_PCM_32BIT:
       case C.ENCODING_PCM_FLOAT:
         return channelCount * 4;
-      case C.ENCODING_PCM_A_LAW:
-      case C.ENCODING_PCM_MU_LAW:
       case C.ENCODING_INVALID:
       case Format.NO_VALUE:
       default:
@@ -2128,6 +2126,8 @@ public final class Util {
         return C.NETWORK_TYPE_3G;
       case TelephonyManager.NETWORK_TYPE_LTE:
         return C.NETWORK_TYPE_4G;
+      case TelephonyManager.NETWORK_TYPE_NR:
+        return C.NETWORK_TYPE_5G;
       case TelephonyManager.NETWORK_TYPE_IWLAN:
         return C.NETWORK_TYPE_WIFI;
       case TelephonyManager.NETWORK_TYPE_GSM:
