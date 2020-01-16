@@ -11,8 +11,14 @@
 * Rename `MediaCodecRenderer.onOutputFormatChanged` to
   `MediaCodecRenderer.onOutputMediaFormatChanged`, further
   clarifying the distinction between `Format` and `MediaFormat`.
-* Downloads: Merge downloads in `SegmentDownloader` to improve overall download
-  speed ([#5978](https://github.com/google/ExoPlayer/issues/5978)).
+* Downloads:
+  * Merge downloads in `SegmentDownloader` to improve overall download
+    speed ([#5978](https://github.com/google/ExoPlayer/issues/5978)).
+  * Fix download resumption when the requirements for them to continue are
+    met ([#6733](https://github.com/google/ExoPlayer/issues/6733),
+    [#6798](https://github.com/google/ExoPlayer/issues/6798)).
+  * Fix `DownloadHelper.createMediaSource` to use `customCacheKey` when creating
+    `ProgressiveMediaSource` instances.
 * In MP4 streams, store the Android capture frame rate only in
   `Format.metadata`. `Format.frameRate` now stores the calculated frame rate.
 * Add `play` and `pause` methods to `Player`.
@@ -28,12 +34,10 @@
   developers to handle data that's neither UTF-8 nor ISO-8859-1
   ([#6753](https://github.com/google/ExoPlayer/issues/6753)).
 * Add playlist API ([#6161](https://github.com/google/ExoPlayer/issues/6161)).
-* Fix handling of network transitions in `RequirementsWatcher`
-  ([#6733](https://github.com/google/ExoPlayer/issues/6733)). Incorrect handling
-  could previously cause downloads to be paused when they should have been able
-  to proceed.
 * Fix handling of E-AC-3 streams that contain AC-3 syncframes
   ([#6602](https://github.com/google/ExoPlayer/issues/6602)).
+* Fix playback of TrueHD streams in Matroska
+  ([#6845](https://github.com/google/ExoPlayer/issues/6845)).
 * Support "twos" codec (big endian PCM) in MP4
   ([#5789](https://github.com/google/ExoPlayer/issues/5789)).
 * WAV: Support IMA ADPCM encoded data.
@@ -49,6 +53,25 @@
   later).
 * Parse `text-combine-upright` CSS property (i.e. tate-chu-yoko) in WebVTT
   subtitles (rendering is coming later).
+* OkHttp extension: Upgrade OkHttp dependency to 3.12.7, which fixes a class of
+  `SocketTimeoutException` issues when using HTTP/2
+  ([#4078](https://github.com/google/ExoPlayer/issues/4078)).
+* Don't use notification chronometer if playback speed is != 1.0
+  ([#6816](https://github.com/google/ExoPlayer/issues/6816)).
+* FLAC extension: Fix handling of bit depths other than 16 in `FlacDecoder`.
+  This issue caused FLAC streams with other bit depths to sound like white noise
+  on earlier releases, but only when embedded in a non-FLAC container such as
+  Matroska or MP4.
+* Javadocs: Add favicon for easier identification in browser tabs
+* FMP4: Add support for encrypted AC-4 tracks.
+* Startup latency optimizations:
+  * Reduce startup latency for DASH and SmoothStreaming playbacks by allowing
+    codec initialization to occur before the network connection for the first
+    media segment has been established.
+  * Reduce startup latency for on-demand DASH playbacks by allowing codec
+    initialization to occur before the sidx box has been loaded.
+* Select multiple metadata tracks if multiple metadata renderers are available
+  ([#6676](https://github.com/google/ExoPlayer/issues/6676)).
 
 ### 2.11.1 (2019-12-20) ###
 
@@ -215,7 +238,7 @@
     `C.MSG_SET_OUTPUT_BUFFER_RENDERER`.
   * Use `VideoDecoderRenderer` as an implementation of
     `VideoDecoderOutputBufferRenderer`, instead of `VideoDecoderSurfaceView`.
-* Flac extension: Update to use NDK r20.
+* FLAC extension: Update to use NDK r20.
 * Opus extension: Update to use NDK r20.
 * FFmpeg extension:
   * Update to use NDK r20.
@@ -352,7 +375,7 @@
   ([#6241](https://github.com/google/ExoPlayer/issues/6241)).
 * MP3: Use CBR header bitrate, not calculated bitrate. This reverts a change
   from 2.9.3 ([#6238](https://github.com/google/ExoPlayer/issues/6238)).
-* Flac extension: Parse `VORBIS_COMMENT` and `PICTURE` metadata
+* FLAC extension: Parse `VORBIS_COMMENT` and `PICTURE` metadata
   ([#5527](https://github.com/google/ExoPlayer/issues/5527)).
 * Fix issue where initial seek positions get ignored when playing a preroll ad
   ([#6201](https://github.com/google/ExoPlayer/issues/6201)).
@@ -361,7 +384,7 @@
   ([#6153](https://github.com/google/ExoPlayer/issues/6153)).
 * Fix `DataSchemeDataSource` re-opening and range requests
   ([#6192](https://github.com/google/ExoPlayer/issues/6192)).
-* Fix Flac and ALAC playback on some LG devices
+* Fix FLAC and ALAC playback on some LG devices
   ([#5938](https://github.com/google/ExoPlayer/issues/5938)).
 * Fix issue when calling `performClick` on `PlayerView` without
   `PlayerControlView`

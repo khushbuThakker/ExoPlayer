@@ -101,15 +101,15 @@ public final class FlacExtractor implements Extractor {
 
   private final SampleNumberHolder sampleNumberHolder;
 
-  @MonotonicNonNull private ExtractorOutput extractorOutput;
-  @MonotonicNonNull private TrackOutput trackOutput;
+  private @MonotonicNonNull ExtractorOutput extractorOutput;
+  private @MonotonicNonNull TrackOutput trackOutput;
 
   private @State int state;
   @Nullable private Metadata id3Metadata;
-  @MonotonicNonNull private FlacStreamMetadata flacStreamMetadata;
+  private @MonotonicNonNull FlacStreamMetadata flacStreamMetadata;
   private int minFrameSize;
   private int frameStartMarker;
-  @MonotonicNonNull private FlacBinarySearchSeeker binarySearchSeeker;
+  private @MonotonicNonNull FlacBinarySearchSeeker binarySearchSeeker;
   private int currentFrameBytesWritten;
   private long currentFrameFirstSampleNumber;
 
@@ -256,15 +256,18 @@ public final class FlacExtractor implements Extractor {
 
     // Copy more bytes into the buffer.
     int currentLimit = buffer.limit();
-    int bytesRead =
-        input.read(
-            buffer.data, /* offset= */ currentLimit, /* length= */ BUFFER_LENGTH - currentLimit);
-    boolean foundEndOfInput = bytesRead == C.RESULT_END_OF_INPUT;
-    if (!foundEndOfInput) {
-      buffer.setLimit(currentLimit + bytesRead);
-    } else if (buffer.bytesLeft() == 0) {
-      outputSampleMetadata();
-      return Extractor.RESULT_END_OF_INPUT;
+    boolean foundEndOfInput = false;
+    if (currentLimit < BUFFER_LENGTH) {
+      int bytesRead =
+          input.read(
+              buffer.data, /* offset= */ currentLimit, /* length= */ BUFFER_LENGTH - currentLimit);
+      foundEndOfInput = bytesRead == C.RESULT_END_OF_INPUT;
+      if (!foundEndOfInput) {
+        buffer.setLimit(currentLimit + bytesRead);
+      } else if (buffer.bytesLeft() == 0) {
+        outputSampleMetadata();
+        return Extractor.RESULT_END_OF_INPUT;
+      }
     }
 
     // Search for a frame.
@@ -272,7 +275,7 @@ public final class FlacExtractor implements Extractor {
 
     // Skip frame search on the bytes within the minimum frame size.
     if (currentFrameBytesWritten < minFrameSize) {
-      buffer.skipBytes(Math.min(minFrameSize, buffer.bytesLeft()));
+      buffer.skipBytes(Math.min(minFrameSize - currentFrameBytesWritten, buffer.bytesLeft()));
     }
 
     long nextFrameFirstSampleNumber = findFrame(buffer, foundEndOfInput);
