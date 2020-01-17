@@ -91,7 +91,6 @@ public final class HlsMediaSource extends BaseMediaSource
 
     private HlsExtractorFactory extractorFactory;
     private HlsPlaylistParserFactory playlistParserFactory;
-    @Nullable private List<StreamKey> streamKeys;
     private HlsPlaylistTracker.Factory playlistTrackerFactory;
     private CompositeSequenceableLoaderFactory compositeSequenceableLoaderFactory;
     private DrmSessionManager<?> drmSessionManager;
@@ -100,7 +99,7 @@ public final class HlsMediaSource extends BaseMediaSource
     private long LowLatency;
     @MetadataType private int metadataType;
     private boolean useSessionKeys;
-    private boolean isCreateCalled;
+    @Nullable private List<StreamKey> streamKeys;
     @Nullable private Object tag;
 
     /**
@@ -138,10 +137,8 @@ public final class HlsMediaSource extends BaseMediaSource
      *
      * @param tag A tag for the media source.
      * @return This factory, for convenience.
-     * @throws IllegalStateException If one of the {@code create} methods has already been called.
      */
     public Factory setTag(@Nullable Object tag) {
-      Assertions.checkState(!isCreateCalled);
       this.tag = tag;
       return this;
     }
@@ -153,11 +150,10 @@ public final class HlsMediaSource extends BaseMediaSource
      * @param extractorFactory An {@link HlsExtractorFactory} for {@link Extractor}s for the
      *     segments.
      * @return This factory, for convenience.
-     * @throws IllegalStateException If one of the {@code create} methods has already been called.
      */
-    public Factory setExtractorFactory(HlsExtractorFactory extractorFactory) {
-      Assertions.checkState(!isCreateCalled);
-      this.extractorFactory = Assertions.checkNotNull(extractorFactory);
+    public Factory setExtractorFactory(@Nullable HlsExtractorFactory extractorFactory) {
+      this.extractorFactory =
+          extractorFactory != null ? extractorFactory : HlsExtractorFactory.DEFAULT;
       return this;
     }
 
@@ -169,30 +165,19 @@ public final class HlsMediaSource extends BaseMediaSource
      *
      * @param loadErrorHandlingPolicy A {@link LoadErrorHandlingPolicy}.
      * @return This factory, for convenience.
-     * @throws IllegalStateException If one of the {@code create} methods has already been called.
      */
-    public Factory setLoadErrorHandlingPolicy(LoadErrorHandlingPolicy loadErrorHandlingPolicy) {
-      Assertions.checkState(!isCreateCalled);
-      this.loadErrorHandlingPolicy = loadErrorHandlingPolicy;
+    public Factory setLoadErrorHandlingPolicy(
+        @Nullable LoadErrorHandlingPolicy loadErrorHandlingPolicy) {
+      this.loadErrorHandlingPolicy =
+          loadErrorHandlingPolicy != null
+              ? loadErrorHandlingPolicy
+              : new DefaultLoadErrorHandlingPolicy();
       return this;
     }
 
-    /**
-     * Sets the minimum number of times to retry if a loading error occurs. The default value is
-     * {@link DefaultLoadErrorHandlingPolicy#DEFAULT_MIN_LOADABLE_RETRY_COUNT}.
-     *
-     * <p>Calling this method is equivalent to calling {@link #setLoadErrorHandlingPolicy} with
-     * {@link DefaultLoadErrorHandlingPolicy#DefaultLoadErrorHandlingPolicy(int)
-     * DefaultLoadErrorHandlingPolicy(minLoadableRetryCount)}
-     *
-     * @param minLoadableRetryCount The minimum number of times to retry if a loading error occurs.
-     * @return This factory, for convenience.
-     * @throws IllegalStateException If one of the {@code create} methods has already been called.
-     * @deprecated Use {@link #setLoadErrorHandlingPolicy(LoadErrorHandlingPolicy)} instead.
-     */
+    /** @deprecated Use {@link #setLoadErrorHandlingPolicy(LoadErrorHandlingPolicy)} instead. */
     @Deprecated
     public Factory setMinLoadableRetryCount(int minLoadableRetryCount) {
-      Assertions.checkState(!isCreateCalled);
       this.loadErrorHandlingPolicy = new DefaultLoadErrorHandlingPolicy(minLoadableRetryCount);
       return this;
     }
@@ -203,11 +188,13 @@ public final class HlsMediaSource extends BaseMediaSource
      *
      * @param playlistParserFactory An {@link HlsPlaylistParserFactory}.
      * @return This factory, for convenience.
-     * @throws IllegalStateException If one of the {@code create} methods has already been called.
      */
-    public Factory setPlaylistParserFactory(HlsPlaylistParserFactory playlistParserFactory) {
-      Assertions.checkState(!isCreateCalled);
-      this.playlistParserFactory = Assertions.checkNotNull(playlistParserFactory);
+    public Factory setPlaylistParserFactory(
+        @Nullable HlsPlaylistParserFactory playlistParserFactory) {
+      this.playlistParserFactory =
+          playlistParserFactory != null
+              ? playlistParserFactory
+              : new DefaultHlsPlaylistParserFactory();
       return this;
     }
 
@@ -217,11 +204,13 @@ public final class HlsMediaSource extends BaseMediaSource
      *
      * @param playlistTrackerFactory A factory for {@link HlsPlaylistTracker} instances.
      * @return This factory, for convenience.
-     * @throws IllegalStateException If one of the {@code create} methods has already been called.
      */
-    public Factory setPlaylistTrackerFactory(HlsPlaylistTracker.Factory playlistTrackerFactory) {
-      Assertions.checkState(!isCreateCalled);
-      this.playlistTrackerFactory = Assertions.checkNotNull(playlistTrackerFactory);
+    public Factory setPlaylistTrackerFactory(
+        @Nullable HlsPlaylistTracker.Factory playlistTrackerFactory) {
+      this.playlistTrackerFactory =
+          playlistTrackerFactory != null
+              ? playlistTrackerFactory
+              : DefaultHlsPlaylistTracker.FACTORY;
       return this;
     }
 
@@ -234,13 +223,13 @@ public final class HlsMediaSource extends BaseMediaSource
      *     SequenceableLoader}s for when this media source loads data from multiple streams (video,
      *     audio etc...).
      * @return This factory, for convenience.
-     * @throws IllegalStateException If one of the {@code create} methods has already been called.
      */
     public Factory setCompositeSequenceableLoaderFactory(
-        CompositeSequenceableLoaderFactory compositeSequenceableLoaderFactory) {
-      Assertions.checkState(!isCreateCalled);
+        @Nullable CompositeSequenceableLoaderFactory compositeSequenceableLoaderFactory) {
       this.compositeSequenceableLoaderFactory =
-          Assertions.checkNotNull(compositeSequenceableLoaderFactory);
+          compositeSequenceableLoaderFactory != null
+              ? compositeSequenceableLoaderFactory
+              : new DefaultCompositeSequenceableLoaderFactory();
       return this;
     }
 
@@ -250,10 +239,8 @@ public final class HlsMediaSource extends BaseMediaSource
      *
      * @param allowChunklessPreparation Whether chunkless preparation is allowed.
      * @return This factory, for convenience.
-     * @throws IllegalStateException If one of the {@code create} methods has already been called.
      */
     public Factory setAllowChunklessPreparation(boolean allowChunklessPreparation) {
-      Assertions.checkState(!isCreateCalled);
       this.allowChunklessPreparation = allowChunklessPreparation;
       return this;
     }
@@ -284,7 +271,6 @@ public final class HlsMediaSource extends BaseMediaSource
      * @return This factory, for convenience.
      */
     public Factory setMetadataType(@MetadataType int metadataType) {
-      Assertions.checkState(!isCreateCalled);
       this.metadataType = metadataType;
       return this;
     }
@@ -300,6 +286,28 @@ public final class HlsMediaSource extends BaseMediaSource
      */
     public Factory setUseSessionKeys(boolean useSessionKeys) {
       this.useSessionKeys = useSessionKeys;
+      return this;
+    }
+
+    /**
+     * Sets the {@link DrmSessionManager} to use for acquiring {@link DrmSession DrmSessions}. The
+     * default value is {@link DrmSessionManager#DUMMY}.
+     *
+     * @param drmSessionManager The {@link DrmSessionManager}.
+     * @return This factory, for convenience.
+     */
+    @Override
+    public Factory setDrmSessionManager(@Nullable DrmSessionManager<?> drmSessionManager) {
+      this.drmSessionManager =
+          drmSessionManager != null
+              ? drmSessionManager
+              : DrmSessionManager.getDummyDrmSessionManager();
+      return this;
+    }
+
+    @Override
+    public Factory setStreamKeys(@Nullable List<StreamKey> streamKeys) {
+      this.streamKeys = streamKeys != null && !streamKeys.isEmpty() ? streamKeys : null;
       return this;
     }
 
@@ -320,28 +328,13 @@ public final class HlsMediaSource extends BaseMediaSource
     }
 
     /**
-     * Sets the {@link DrmSessionManager} to use for acquiring {@link DrmSession DrmSessions}. The
-     * default value is {@link DrmSessionManager#DUMMY}.
-     *
-     * @param drmSessionManager The {@link DrmSessionManager}.
-     * @return This factory, for convenience.
-     * @throws IllegalStateException If one of the {@code create} methods has already been called.
-     */
-    @Override
-    public Factory setDrmSessionManager(DrmSessionManager<?> drmSessionManager) {
-      Assertions.checkState(!isCreateCalled);
-      this.drmSessionManager = drmSessionManager;
-      return this;
-    }
-
-    /**
      * Returns a new {@link HlsMediaSource} using the current parameters.
      *
      * @return The new {@link HlsMediaSource}.
      */
     @Override
     public HlsMediaSource createMediaSource(Uri playlistUri) {
-      isCreateCalled = true;
+      HlsPlaylistParserFactory playlistParserFactory = this.playlistParserFactory;
       if (streamKeys != null) {
         playlistParserFactory =
             new FilteringHlsPlaylistParserFactory(playlistParserFactory, streamKeys);
@@ -363,17 +356,9 @@ public final class HlsMediaSource extends BaseMediaSource
     }
 
     @Override
-    public Factory setStreamKeys(List<StreamKey> streamKeys) {
-      Assertions.checkState(!isCreateCalled);
-      this.streamKeys = streamKeys;
-      return this;
-    }
-
-    @Override
     public int[] getSupportedTypes() {
       return new int[] {C.TYPE_HLS};
     }
-
   }
 
   private final HlsExtractorFactory extractorFactory;
