@@ -246,7 +246,6 @@ public final class HlsMediaSource extends BaseMediaSource
     }
 
     public Factory setLowLatency(long LowLatency) {
-      Assertions.checkState(!isCreateCalled);
       this.LowLatency = LowLatency;
       return this;
     }
