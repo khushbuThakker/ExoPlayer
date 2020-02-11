@@ -1009,7 +1009,7 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 
   private void updateSampleStreams(@NullableType SampleStream[] streams) {
     hlsSampleStreams.clear();
-    for (SampleStream stream : streams) {
+    for (@Nullable SampleStream stream : streams) {
       if (stream != null) {
         hlsSampleStreams.add((HlsSampleStream) stream);
       }
@@ -1069,7 +1069,8 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
     for (int i = 0; i < trackGroupCount; i++) {
       for (int queueIndex = 0; queueIndex < sampleQueues.length; queueIndex++) {
         SampleQueue sampleQueue = sampleQueues[queueIndex];
-        if (formatsMatch(sampleQueue.getUpstreamFormat(), trackGroups.get(i).getFormat(0))) {
+        Format upstreamFormat = Assertions.checkStateNotNull(sampleQueue.getUpstreamFormat());
+        if (formatsMatch(upstreamFormat, trackGroups.get(i).getFormat(0))) {
           trackGroupToSampleQueueIndex[i] = queueIndex;
           break;
         }
@@ -1118,7 +1119,9 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
     int primaryExtractorTrackIndex = C.INDEX_UNSET;
     int extractorTrackCount = sampleQueues.length;
     for (int i = 0; i < extractorTrackCount; i++) {
-      String sampleMimeType = sampleQueues[i].getUpstreamFormat().sampleMimeType;
+      @Nullable
+      String sampleMimeType =
+          Assertions.checkStateNotNull(sampleQueues[i].getUpstreamFormat()).sampleMimeType;
       int trackType;
       if (MimeTypes.isVideo(sampleMimeType)) {
         trackType = C.TRACK_TYPE_VIDEO;
@@ -1153,7 +1156,7 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
     // Construct the set of exposed track groups.
     TrackGroup[] trackGroups = new TrackGroup[extractorTrackCount];
     for (int i = 0; i < extractorTrackCount; i++) {
-      Format sampleFormat = sampleQueues[i].getUpstreamFormat();
+      Format sampleFormat = Assertions.checkStateNotNull(sampleQueues[i].getUpstreamFormat());
       if (i == primaryExtractorTrackIndex) {
         Format[] formats = new Format[chunkSourceTrackCount];
         if (chunkSourceTrackCount == 1) {
@@ -1166,6 +1169,7 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
         trackGroups[i] = new TrackGroup(formats);
         primaryTrackGroupIndex = i;
       } else {
+        @Nullable
         Format trackFormat =
             primaryExtractorTrackType == C.TRACK_TYPE_VIDEO
                     && MimeTypes.isAudio(sampleFormat.sampleMimeType)
@@ -1280,8 +1284,8 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
             ? playlistFormat.channelCount
             : sampleFormat.channelCount;
     int sampleTrackType = MimeTypes.getTrackType(sampleFormat.sampleMimeType);
-    String codecs = Util.getCodecsOfType(playlistFormat.codecs, sampleTrackType);
-    String mimeType = MimeTypes.getMediaMimeType(codecs);
+    @Nullable String codecs = Util.getCodecsOfType(playlistFormat.codecs, sampleTrackType);
+    @Nullable String mimeType = MimeTypes.getMediaMimeType(codecs);
     if (mimeType == null) {
       mimeType = sampleFormat.sampleMimeType;
     }
@@ -1304,8 +1308,8 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
   }
 
   private static boolean formatsMatch(Format manifestFormat, Format sampleFormat) {
-    String manifestFormatMimeType = manifestFormat.sampleMimeType;
-    String sampleFormatMimeType = sampleFormat.sampleMimeType;
+    @Nullable String manifestFormatMimeType = manifestFormat.sampleMimeType;
+    @Nullable String sampleFormatMimeType = sampleFormat.sampleMimeType;
     int manifestFormatTrackType = MimeTypes.getTrackType(manifestFormatMimeType);
     if (manifestFormatTrackType != C.TRACK_TYPE_TEXT) {
       return manifestFormatTrackType == MimeTypes.getTrackType(sampleFormatMimeType);
