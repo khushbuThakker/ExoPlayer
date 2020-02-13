@@ -66,9 +66,11 @@ public final class FormatTest {
         new Format(
             "id",
             "label",
+            "language",
             C.SELECTION_FLAG_DEFAULT,
             C.ROLE_FLAG_MAIN,
-            /* bitrate= */ 1024,
+            /* averageBitrate= */ 1024,
+            /* peakBitrate= */ 2048,
             "codec",
             metadata,
             /* containerMimeType= */ MimeTypes.VIDEO_MP4,
@@ -90,7 +92,6 @@ public final class FormatTest {
             C.ENCODING_PCM_24BIT,
             /* encoderDelay= */ 1001,
             /* encoderPadding= */ 1002,
-            "language",
             /* accessibilityChannel= */ Format.NO_VALUE,
             /* exoMediaCryptoType= */ null);
 
