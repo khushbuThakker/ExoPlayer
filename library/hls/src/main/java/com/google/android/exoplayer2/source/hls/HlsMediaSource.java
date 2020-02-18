@@ -474,13 +474,18 @@ public final class HlsMediaSource extends BaseMediaSource
       List<HlsMediaPlaylist.Segment> segments = playlist.segments;
       if (LowLatency > 0 && playlist.durationUs > (1000 * LowLatency)) {
 
-        //If user requested value for LowLatency is lower last segment + 1.2s use the later
-        long mLowLatency = Math.max((1000 * LowLatency),
-            segments.get(Math.max(0, segments.size() - 1)).durationUs + 1200000);
+        long mLowLatency = 1000 * LowLatency;
 
+        if (!segments.isEmpty()) {
+          //If requested value for LowLatency is lower then (last segment + playlist.targetDurationUs) use the later
+          mLowLatency = Math.max(mLowLatency,
+            segments.get(Math.max(0, segments.size() - 1)).durationUs + 1000000);
+        }
+
+        //The starting position from the end of the segment list
         windowDefaultStartPositionUs = playlist.durationUs - mLowLatency;
-
-        if (playlist.targetDurationUs > mLowLatency / 2) playlist.targetDurationUs = mLowLatency / 2;
+        //targetDurationUs is used as the timer with DefaultHlsPlaylistTracker loadPlaylist() will refresh
+        playlist.targetDurationUs = mLowLatency / 2;
 
       } else if (windowDefaultStartPositionUs == C.TIME_UNSET) {
         windowDefaultStartPositionUs = 0;
@@ -494,6 +499,7 @@ public final class HlsMediaSource extends BaseMediaSource
             defaultStartSegmentIndex--;
           }
           windowDefaultStartPositionUs = segments.get(defaultStartSegmentIndex).relativeStartTimeUs;
+          playlist.targetDurationUs = (segments.get(Math.max(0, segments.size() - 1)).durationUs + 1000000) / 2;
         }
       }
       timeline =
