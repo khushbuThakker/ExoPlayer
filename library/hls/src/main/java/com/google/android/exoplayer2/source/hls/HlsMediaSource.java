@@ -490,10 +490,10 @@ public final class HlsMediaSource extends BaseMediaSource
       } else if (windowDefaultStartPositionUs == C.TIME_UNSET) {
         windowDefaultStartPositionUs = 0;
         if (!segments.isEmpty()) {
-          int defaultStartSegmentIndex = Math.max(0, segments.size() - 5);
+          int defaultStartSegmentIndex = Math.max(0, segments.size() - 4);
           // We attempt to set the default start position to be at least twice the target duration
           // behind the live edge.
-          long minStartPositionUs = playlist.durationUs - playlist.targetDurationUs * 10;
+          long minStartPositionUs = playlist.durationUs - playlist.targetDurationUs * 6;
           while (defaultStartSegmentIndex > 0
               && segments.get(defaultStartSegmentIndex).relativeStartTimeUs > minStartPositionUs) {
             defaultStartSegmentIndex--;
