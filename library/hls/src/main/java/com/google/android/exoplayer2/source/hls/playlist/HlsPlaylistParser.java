@@ -71,6 +71,7 @@ public final class HlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
   private static final String TAG_STREAM_INF = "#EXT-X-STREAM-INF";
   private static final String TAG_MEDIA = "#EXT-X-MEDIA";
   private static final String TAG_TARGET_DURATION = "#EXT-X-TARGETDURATION";
+  private static final String TAG_TWITCH_PREFETCH = "#EXT-X-TWITCH-PREFETCH";
   private static final String TAG_DISCONTINUITY = "#EXT-X-DISCONTINUITY";
   private static final String TAG_DISCONTINUITY_SEQUENCE = "#EXT-X-DISCONTINUITY-SEQUENCE";
   private static final String TAG_PROGRAM_DATE_TIME = "#EXT-X-PROGRAM-DATE-TIME";
@@ -209,6 +210,7 @@ public final class HlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
         } else if (line.startsWith(TAG_TARGET_DURATION)
             || line.startsWith(TAG_MEDIA_SEQUENCE)
             || line.startsWith(TAG_MEDIA_DURATION)
+            || line.startsWith(TAG_TWITCH_PREFETCH)
             || line.startsWith(TAG_KEY)
             || line.startsWith(TAG_BYTERANGE)
             || line.equals(TAG_DISCONTINUITY)
@@ -543,6 +545,8 @@ public final class HlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
 
     long segmentDurationUs = 0;
     String segmentTitle = "";
+    long lastsegmentDurationUs = 0;
+    String LastsegmentTitle = "";
     boolean hasDiscontinuitySequence = false;
     int playlistDiscontinuitySequence = 0;
     int relativeDiscontinuitySequence = 0;
@@ -628,6 +632,10 @@ public final class HlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
         segmentDurationUs =
             (long) (parseDoubleAttr(line, REGEX_MEDIA_DURATION) * C.MICROS_PER_SECOND);
         segmentTitle = parseOptionalStringAttr(line, REGEX_MEDIA_TITLE, "", variableDefinitions);
+
+        lastsegmentDurationUs = segmentDurationUs;
+        LastsegmentTitle = segmentTitle;
+
       } else if (line.startsWith(TAG_KEY)) {
         String method = parseStringAttr(line, REGEX_METHOD, variableDefinitions);
         String keyFormat =
@@ -682,7 +690,14 @@ public final class HlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
         hasIndependentSegmentsTag = true;
       } else if (line.equals(TAG_ENDLIST)) {
         hasEndTag = true;
-      } else if (!line.startsWith("#")) {
+      } else if (!line.startsWith("#") || line.startsWith(TAG_TWITCH_PREFETCH)) {
+
+        if (line.startsWith(TAG_TWITCH_PREFETCH)) {
+            line = line.substring(23);
+            segmentDurationUs = lastsegmentDurationUs;
+            segmentTitle = LastsegmentTitle;
+        }
+
         String segmentEncryptionIV;
         if (fullSegmentEncryptionKeyUri == null) {
           segmentEncryptionIV = null;
