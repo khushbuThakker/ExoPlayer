@@ -34,7 +34,8 @@ android {
 
 dependencies {
     implementation project(modulePrefix + 'library-core')
-    implementation 'com.firebase:firebase-jobdispatcher:0.8.6'
+    implementation 'com.firebase:firebase-jobdispatcher:0.8.5'
+    compileOnly 'org.jetbrains.kotlin:kotlin-annotations-jvm:' + kotlinAnnotationsVersion
 }
 
 ext {
