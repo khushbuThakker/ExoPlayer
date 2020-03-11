@@ -76,6 +76,10 @@
         MediaSources factories.
 *   Downloads: Merge downloads in `SegmentDownloader` to improve overall
     download speed ([#5978](https://github.com/google/ExoPlayer/issues/5978)).
+*   DASH:
+    *   Update the manifest URI to avoid repeated HTTP redirects
+        ([#6907](https://github.com/google/ExoPlayer/issues/6907)).
+    *   Parse period `AssetIdentifier` elements.
 *   MP3: Add `IndexSeeker` for accurate seeks in VBR streams
     ([#6787](https://github.com/google/ExoPlayer/issues/6787)). This seeker is
     enabled by passing `FLAG_ENABLE_INDEX_SEEKING` to the `Mp3Extractor`. It may
@@ -87,6 +91,7 @@
     *   Upgrade Truth dependency from 0.44 to 1.0.
     *   Upgrade to JUnit 4.13-rc-2.
 *   UI
+    *   Add `showScrubber` and `hideScrubber` methods to DefaultTimeBar.
     *   Move logic of prev, next, fast forward and rewind to ControlDispatcher
         ([#6926](https://github.com/google/ExoPlayer/issues/6926)).
 *   Demo apps: Add
