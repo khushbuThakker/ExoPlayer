@@ -95,7 +95,7 @@ public final class HlsMediaSource extends BaseMediaSource
     private HlsPlaylistParserFactory playlistParserFactory;
     private HlsPlaylistTracker.Factory playlistTrackerFactory;
     private CompositeSequenceableLoaderFactory compositeSequenceableLoaderFactory;
-    private DrmSessionManager<?> drmSessionManager;
+    private DrmSessionManager drmSessionManager;
     private LoadErrorHandlingPolicy loadErrorHandlingPolicy;
     private boolean allowChunklessPreparation;
     private long LowLatency;
@@ -296,7 +296,7 @@ public final class HlsMediaSource extends BaseMediaSource
      * @return This factory, for convenience.
      */
     @Override
-    public Factory setDrmSessionManager(@Nullable DrmSessionManager<?> drmSessionManager) {
+    public Factory setDrmSessionManager(@Nullable DrmSessionManager drmSessionManager) {
       this.drmSessionManager =
           drmSessionManager != null
               ? drmSessionManager
@@ -389,7 +389,7 @@ public final class HlsMediaSource extends BaseMediaSource
   private final Uri manifestUri;
   private final HlsDataSourceFactory dataSourceFactory;
   private final CompositeSequenceableLoaderFactory compositeSequenceableLoaderFactory;
-  private final DrmSessionManager<?> drmSessionManager;
+  private final DrmSessionManager drmSessionManager;
   private final LoadErrorHandlingPolicy loadErrorHandlingPolicy;
   private final boolean allowChunklessPreparation;
   private final long LowLatency;
@@ -405,7 +405,7 @@ public final class HlsMediaSource extends BaseMediaSource
       HlsDataSourceFactory dataSourceFactory,
       HlsExtractorFactory extractorFactory,
       CompositeSequenceableLoaderFactory compositeSequenceableLoaderFactory,
-      DrmSessionManager<?> drmSessionManager,
+      DrmSessionManager drmSessionManager,
       LoadErrorHandlingPolicy loadErrorHandlingPolicy,
       HlsPlaylistTracker playlistTracker,
       boolean allowChunklessPreparation,
