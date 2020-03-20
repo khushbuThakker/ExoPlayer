@@ -227,7 +227,7 @@ public final class HlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
     throw new ParserException("Failed to parse the playlist, could not identify any tags.");
   }
 
-  public static boolean checkPlaylistHeader(BufferedReader reader) throws IOException {
+  private static boolean checkPlaylistHeader(BufferedReader reader) throws IOException {
     int last = reader.read();
     if (last == 0xEF) {
       if (reader.read() != 0xBB || reader.read() != 0xBF) {
@@ -256,7 +256,7 @@ public final class HlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
     return c;
   }
 
-  public static HlsMasterPlaylist parseMasterPlaylist(LineIterator iterator, String baseUri)
+  private static HlsMasterPlaylist parseMasterPlaylist(LineIterator iterator, String baseUri)
       throws IOException {
     HashMap<Uri, ArrayList<VariantInfo>> urlToVariantInfos = new HashMap<>();
     HashMap<String, String> variableDefinitions = new HashMap<>();
@@ -527,7 +527,7 @@ public final class HlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
     return null;
   }
 
-  public static HlsMediaPlaylist parseMediaPlaylist(
+  private static HlsMediaPlaylist parseMediaPlaylist(
       HlsMasterPlaylist masterPlaylist, LineIterator iterator, String baseUri) throws IOException {
     @HlsMediaPlaylist.PlaylistType int playlistType = HlsMediaPlaylist.PLAYLIST_TYPE_UNKNOWN;
     long startOffsetUs = C.TIME_UNSET;
@@ -898,7 +898,7 @@ public final class HlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
     return Pattern.compile(attribute + "=(" + BOOLEAN_FALSE + "|" + BOOLEAN_TRUE + ")");
   }
 
-  public static class LineIterator {
+  private static class LineIterator {
 
     private final BufferedReader reader;
     private final Queue<String> extraLines;
