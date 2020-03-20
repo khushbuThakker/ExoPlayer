@@ -567,7 +567,7 @@ public class DefaultHttpDataSource extends BaseDataSource implements HttpDataSou
    * @return The next URL.
    * @throws IOException If redirection isn't possible.
    */
-  private static URL handleRedirect(URL originalUrl, @Nullable String location) throws IOException {
+  public static URL handleRedirect(URL originalUrl, @Nullable String location) throws IOException {
     if (location == null) {
       throw new ProtocolException("Null location redirect");
     }
@@ -594,7 +594,7 @@ public class DefaultHttpDataSource extends BaseDataSource implements HttpDataSou
    * @param connection The open connection.
    * @return The extracted length, or {@link C#LENGTH_UNSET}.
    */
-  private static long getContentLength(HttpURLConnection connection) {
+  public static long getContentLength(HttpURLConnection connection) {
     long contentLength = C.LENGTH_UNSET;
     String contentLengthHeader = connection.getHeaderField("Content-Length");
     if (!TextUtils.isEmpty(contentLengthHeader)) {
@@ -719,7 +719,7 @@ public class DefaultHttpDataSource extends BaseDataSource implements HttpDataSou
    * @param bytesRemaining The number of bytes remaining to be read from the input stream if its
    *     length is known. {@link C#LENGTH_UNSET} otherwise.
    */
-  private static void maybeTerminateInputStream(HttpURLConnection connection, long bytesRemaining) {
+  public static void maybeTerminateInputStream(HttpURLConnection connection, long bytesRemaining) {
     if (Util.SDK_INT != 19 && Util.SDK_INT != 20) {
       return;
     }
@@ -767,7 +767,7 @@ public class DefaultHttpDataSource extends BaseDataSource implements HttpDataSou
     }
   }
 
-  private static boolean isCompressed(HttpURLConnection connection) {
+  public static boolean isCompressed(HttpURLConnection connection) {
     String contentEncoding = connection.getHeaderField("Content-Encoding");
     return "gzip".equalsIgnoreCase(contentEncoding);
   }
