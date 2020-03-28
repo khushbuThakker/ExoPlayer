@@ -732,7 +732,7 @@ import com.google.android.exoplayer2.util.Assertions;
             : 0;
     if (durationUs != C.TIME_UNSET && startPositionUs >= durationUs) {
       // Ensure start position doesn't exceed duration.
-      startPositionUs = Math.max(0, durationUs - 1);
+      startPositionUs = 0;//Math.max(0, durationUs - 1);
     }
     return new MediaPeriodInfo(
         id,
@@ -767,7 +767,7 @@ import com.google.android.exoplayer2.util.Assertions;
             : endPositionUs;
     if (durationUs != C.TIME_UNSET && startPositionUs >= durationUs) {
       // Ensure start position doesn't exceed duration.
-      startPositionUs = Math.max(0, durationUs - 1);
+      startPositionUs = 0;//Math.max(0, durationUs - 1);
     }
     return new MediaPeriodInfo(
         id,

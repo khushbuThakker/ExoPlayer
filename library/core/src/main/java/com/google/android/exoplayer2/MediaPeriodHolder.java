@@ -181,7 +181,7 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
     long requestedStartPositionUs = info.startPositionUs;
     if (info.durationUs != C.TIME_UNSET && requestedStartPositionUs >= info.durationUs) {
       // Make sure start position doesn't exceed period duration.
-      requestedStartPositionUs = Math.max(0, info.durationUs - 1);
+      requestedStartPositionUs = 0;//Math.max(0, info.durationUs - 1);
     }
     long newStartPositionUs =
         applyTrackSelection(

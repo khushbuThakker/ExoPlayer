@@ -246,7 +246,7 @@ public final class MaskingMediaSource extends CompositeMediaSource<Void> {
     if (periodDurationUs != C.TIME_UNSET) {
       // Ensure the overridden position doesn't exceed the period duration.
       if (preparePositionOverrideUs >= periodDurationUs) {
-        preparePositionOverrideUs = Math.max(0, periodDurationUs - 1);
+        preparePositionOverrideUs = 0;//Math.max(0, periodDurationUs - 1);
       }
     }
     maskingPeriod.overridePreparePositionUs(preparePositionOverrideUs);

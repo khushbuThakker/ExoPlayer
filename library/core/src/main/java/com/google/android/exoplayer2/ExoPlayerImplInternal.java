@@ -1059,7 +1059,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
         if (newPlayingPeriodHolder.info.durationUs != C.TIME_UNSET
             && periodPositionUs >= newPlayingPeriodHolder.info.durationUs) {
           // Make sure seek position doesn't exceed period duration.
-          periodPositionUs = Math.max(0, newPlayingPeriodHolder.info.durationUs - 1);
+          periodPositionUs = 0;//Math.max(0, newPlayingPeriodHolder.info.durationUs - 1);
         }
         if (newPlayingPeriodHolder.hasEnabledTracks) {
           periodPositionUs = newPlayingPeriodHolder.mediaPeriod.seekToUs(periodPositionUs);
