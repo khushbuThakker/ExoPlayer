@@ -1362,7 +1362,7 @@ import java.util.concurrent.TimeoutException;
     }
 
     private static boolean isPlaying(PlaybackInfo playbackInfo) {
-      return playbackInfo.playbackState == Player.STATE_READY
+      return (playbackInfo.playbackState == Player.STATE_READY || playbackInfo.playbackState == Player.STATE_BUFFERING)
           && playbackInfo.playWhenReady
           && playbackInfo.playbackSuppressionReason == PLAYBACK_SUPPRESSION_REASON_NONE;
     }
