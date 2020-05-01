@@ -338,7 +338,7 @@ public final class HlsMediaSource extends BaseMediaSource
     @Deprecated
     @Override
     public HlsMediaSource createMediaSource(Uri uri) {
-      return createMediaSource(new MediaItem.Builder().setSourceUri(uri).build());
+      return createMediaSource(new MediaItem.Builder().setUri(uri).build());
     }
 
     /**
@@ -361,7 +361,7 @@ public final class HlsMediaSource extends BaseMediaSource
             new FilteringHlsPlaylistParserFactory(playlistParserFactory, streamKeys);
       }
       return new HlsMediaSource(
-          mediaItem.playbackProperties.sourceUri,
+          mediaItem.playbackProperties.uri,
           hlsDataSourceFactory,
           extractorFactory,
           compositeSequenceableLoaderFactory,
