@@ -367,7 +367,7 @@ public class SimpleExoPlayer extends BasePlayer
   @Nullable private VideoDecoderOutputBufferRenderer videoDecoderOutputBufferRenderer;
   @Nullable private Surface surface;
   private boolean ownsSurface;
-  private @C.VideoScalingMode int videoScalingMode;
+  @Renderer.VideoScalingMode private int videoScalingMode;
   @Nullable private SurfaceHolder surfaceHolder;
   @Nullable private TextureView textureView;
   private int surfaceWidth;
@@ -388,40 +388,8 @@ public class SimpleExoPlayer extends BasePlayer
   private boolean playerReleased;
   private DeviceInfo deviceInfo;
 
-  /** @param builder The {@link Builder} to obtain all construction parameters. */
-  protected SimpleExoPlayer(Builder builder) {
-    this(
-        builder.context,
-        builder.renderersFactory,
-        builder.trackSelector,
-        builder.mediaSourceFactory,
-        builder.loadControl,
-        builder.bandwidthMeter,
-        builder.analyticsCollector,
-        builder.useLazyPreparation,
-        builder.clock,
-        builder.looper);
-    if (builder.throwWhenStuckBuffering) {
-      player.experimental_throwWhenStuckBuffering();
-    }
-  }
-
-  /**
-   * @param context A {@link Context}.
-   * @param renderersFactory A factory for creating {@link Renderer}s to be used by the instance.
-   * @param trackSelector The {@link TrackSelector} that will be used by the instance.
-   * @param loadControl The {@link LoadControl} that will be used by the instance.
-   * @param bandwidthMeter The {@link BandwidthMeter} that will be used by the instance.
-   * @param analyticsCollector A factory for creating the {@link AnalyticsCollector} that will
-   *     collect and forward all player events.
-   * @param useLazyPreparation Whether playlist items are prepared lazily. If false, all manifest
-   *     loads and other initial preparation steps happen immediately. If true, these initial
-   *     preparations are triggered only when the player starts buffering the media.
-   * @param clock The {@link Clock} that will be used by the instance. Should always be {@link
-   *     Clock#DEFAULT}, unless the player is being used from a test.
-   * @param applicationLooper The {@link Looper} which must be used for all calls to the player and
-   *     which is used to call listeners on.
-   */
+  /** @deprecated Use the {@link Builder} and pass it to {@link #SimpleExoPlayer(Builder)}. */
+  @Deprecated
   protected SimpleExoPlayer(
       Context context,
       RenderersFactory renderersFactory,
@@ -433,8 +401,22 @@ public class SimpleExoPlayer extends BasePlayer
       boolean useLazyPreparation,
       Clock clock,
       Looper applicationLooper) {
-    this.bandwidthMeter = bandwidthMeter;
-    this.analyticsCollector = analyticsCollector;
+    this(
+        new Builder(context, renderersFactory)
+            .setTrackSelector(trackSelector)
+            .setMediaSourceFactory(mediaSourceFactory)
+            .setLoadControl(loadControl)
+            .setBandwidthMeter(bandwidthMeter)
+            .setAnalyticsCollector(analyticsCollector)
+            .setUseLazyPreparation(useLazyPreparation)
+            .setClock(clock)
+            .setLooper(applicationLooper));
+  }
+
+  /** @param builder The {@link Builder} to obtain all construction parameters. */
+  protected SimpleExoPlayer(Builder builder) {
+    bandwidthMeter = builder.bandwidthMeter;
+    analyticsCollector = builder.analyticsCollector;
     componentListener = new ComponentListener();
     videoListeners = new CopyOnWriteArraySet<>();
     audioListeners = new CopyOnWriteArraySet<>();
@@ -443,9 +425,9 @@ public class SimpleExoPlayer extends BasePlayer
     deviceListeners = new CopyOnWriteArraySet<>();
     videoDebugListeners = new CopyOnWriteArraySet<>();
     audioDebugListeners = new CopyOnWriteArraySet<>();
-    Handler eventHandler = new Handler(applicationLooper);
+    Handler eventHandler = new Handler(builder.looper);
     renderers =
-        renderersFactory.createRenderers(
+        builder.renderersFactory.createRenderers(
             eventHandler,
             componentListener,
             componentListener,
@@ -463,14 +445,14 @@ public class SimpleExoPlayer extends BasePlayer
     player =
         new ExoPlayerImpl(
             renderers,
-            trackSelector,
-            mediaSourceFactory,
-            loadControl,
+            builder.trackSelector,
+            builder.mediaSourceFactory,
+            builder.loadControl,
             bandwidthMeter,
             analyticsCollector,
-            useLazyPreparation,
-            clock,
-            applicationLooper);
+            builder.useLazyPreparation,
+            builder.clock,
+            builder.looper);
     analyticsCollector.setPlayer(player);
     player.addListener(analyticsCollector);
     player.addListener(componentListener);
@@ -481,12 +463,15 @@ public class SimpleExoPlayer extends BasePlayer
     addMetadataOutput(analyticsCollector);
     bandwidthMeter.addEventListener(eventHandler, analyticsCollector);
     audioBecomingNoisyManager =
-        new AudioBecomingNoisyManager(context, eventHandler, componentListener);
-    audioFocusManager = new AudioFocusManager(context, eventHandler, componentListener);
-    streamVolumeManager = new StreamVolumeManager(context, eventHandler, componentListener);
-    wakeLockManager = new WakeLockManager(context);
-    wifiLockManager = new WifiLockManager(context);
+        new AudioBecomingNoisyManager(builder.context, eventHandler, componentListener);
+    audioFocusManager = new AudioFocusManager(builder.context, eventHandler, componentListener);
+    streamVolumeManager = new StreamVolumeManager(builder.context, eventHandler, componentListener);
+    wakeLockManager = new WakeLockManager(builder.context);
+    wifiLockManager = new WifiLockManager(builder.context);
     deviceInfo = createDeviceInfo(streamVolumeManager);
+    if (builder.throwWhenStuckBuffering) {
+      player.experimental_throwWhenStuckBuffering();
+    }
   }
 
   @Override
@@ -525,25 +510,18 @@ public class SimpleExoPlayer extends BasePlayer
    * <p>Note that the scaling mode only applies if a {@link MediaCodec}-based video {@link Renderer}
    * is enabled and if the output surface is owned by a {@link android.view.SurfaceView}.
    *
-   * @param videoScalingMode The video scaling mode.
+   * @param videoScalingMode The {@link Renderer.VideoScalingMode}.
    */
   @Override
-  public void setVideoScalingMode(@C.VideoScalingMode int videoScalingMode) {
+  public void setVideoScalingMode(@Renderer.VideoScalingMode int videoScalingMode) {
     verifyApplicationThread();
     this.videoScalingMode = videoScalingMode;
-    for (Renderer renderer : renderers) {
-      if (renderer.getTrackType() == C.TRACK_TYPE_VIDEO) {
-        player
-            .createMessage(renderer)
-            .setType(Renderer.MSG_SET_SCALING_MODE)
-            .setPayload(videoScalingMode)
-            .send();
-      }
-    }
+    sendRendererMessage(C.TRACK_TYPE_VIDEO, Renderer.MSG_SET_SCALING_MODE, videoScalingMode);
   }
 
   @Override
-  public @C.VideoScalingMode int getVideoScalingMode() {
+  @Renderer.VideoScalingMode
+  public int getVideoScalingMode() {
     return videoScalingMode;
   }
 
@@ -703,15 +681,7 @@ public class SimpleExoPlayer extends BasePlayer
     }
     if (!Util.areEqual(this.audioAttributes, audioAttributes)) {
       this.audioAttributes = audioAttributes;
-      for (Renderer renderer : renderers) {
-        if (renderer.getTrackType() == C.TRACK_TYPE_AUDIO) {
-          player
-              .createMessage(renderer)
-              .setType(Renderer.MSG_SET_AUDIO_ATTRIBUTES)
-              .setPayload(audioAttributes)
-              .send();
-        }
-      }
+      sendRendererMessage(C.TRACK_TYPE_AUDIO, Renderer.MSG_SET_AUDIO_ATTRIBUTES, audioAttributes);
       streamVolumeManager.setStreamType(Util.getStreamTypeForAudioUsage(audioAttributes.usage));
       for (AudioListener audioListener : audioListeners) {
         audioListener.onAudioAttributesChanged(audioAttributes);
@@ -738,15 +708,7 @@ public class SimpleExoPlayer extends BasePlayer
       return;
     }
     this.audioSessionId = audioSessionId;
-    for (Renderer renderer : renderers) {
-      if (renderer.getTrackType() == C.TRACK_TYPE_AUDIO) {
-        player
-            .createMessage(renderer)
-            .setType(Renderer.MSG_SET_AUDIO_SESSION_ID)
-            .setPayload(audioSessionId)
-            .send();
-      }
-    }
+    sendRendererMessage(C.TRACK_TYPE_AUDIO, Renderer.MSG_SET_AUDIO_SESSION_ID, audioSessionId);
     if (audioSessionId != C.AUDIO_SESSION_ID_UNSET) {
       notifyAudioSessionIdSet();
     }
@@ -760,15 +722,7 @@ public class SimpleExoPlayer extends BasePlayer
   @Override
   public void setAuxEffectInfo(AuxEffectInfo auxEffectInfo) {
     verifyApplicationThread();
-    for (Renderer renderer : renderers) {
-      if (renderer.getTrackType() == C.TRACK_TYPE_AUDIO) {
-        player
-            .createMessage(renderer)
-            .setType(Renderer.MSG_SET_AUX_EFFECT_INFO)
-            .setPayload(auxEffectInfo)
-            .send();
-      }
-    }
+    sendRendererMessage(C.TRACK_TYPE_AUDIO, Renderer.MSG_SET_AUX_EFFECT_INFO, auxEffectInfo);
   }
 
   @Override
@@ -807,15 +761,8 @@ public class SimpleExoPlayer extends BasePlayer
       return;
     }
     this.skipSilenceEnabled = skipSilenceEnabled;
-    for (Renderer renderer : renderers) {
-      if (renderer.getTrackType() == C.TRACK_TYPE_AUDIO) {
-        player
-            .createMessage(renderer)
-            .setType(Renderer.MSG_SET_SKIP_SILENCE_ENABLED)
-            .setPayload(skipSilenceEnabled)
-            .send();
-      }
-    }
+    sendRendererMessage(
+        C.TRACK_TYPE_AUDIO, Renderer.MSG_SET_SKIP_SILENCE_ENABLED, skipSilenceEnabled);
     notifySkipSilenceEnabledChanged();
   }
 
@@ -972,15 +919,8 @@ public class SimpleExoPlayer extends BasePlayer
   public void setVideoFrameMetadataListener(VideoFrameMetadataListener listener) {
     verifyApplicationThread();
     videoFrameMetadataListener = listener;
-    for (Renderer renderer : renderers) {
-      if (renderer.getTrackType() == C.TRACK_TYPE_VIDEO) {
-        player
-            .createMessage(renderer)
-            .setType(Renderer.MSG_SET_VIDEO_FRAME_METADATA_LISTENER)
-            .setPayload(listener)
-            .send();
-      }
-    }
+    sendRendererMessage(
+        C.TRACK_TYPE_VIDEO, Renderer.MSG_SET_VIDEO_FRAME_METADATA_LISTENER, listener);
   }
 
   @Override
@@ -989,30 +929,16 @@ public class SimpleExoPlayer extends BasePlayer
     if (videoFrameMetadataListener != listener) {
       return;
     }
-    for (Renderer renderer : renderers) {
-      if (renderer.getTrackType() == C.TRACK_TYPE_VIDEO) {
-        player
-            .createMessage(renderer)
-            .setType(Renderer.MSG_SET_VIDEO_FRAME_METADATA_LISTENER)
-            .setPayload(null)
-            .send();
-      }
-    }
+    sendRendererMessage(
+        C.TRACK_TYPE_VIDEO, Renderer.MSG_SET_VIDEO_FRAME_METADATA_LISTENER, /* payload= */ null);
   }
 
   @Override
   public void setCameraMotionListener(CameraMotionListener listener) {
     verifyApplicationThread();
     cameraMotionListener = listener;
-    for (Renderer renderer : renderers) {
-      if (renderer.getTrackType() == C.TRACK_TYPE_CAMERA_MOTION) {
-        player
-            .createMessage(renderer)
-            .setType(Renderer.MSG_SET_CAMERA_MOTION_LISTENER)
-            .setPayload(listener)
-            .send();
-      }
-    }
+    sendRendererMessage(
+        C.TRACK_TYPE_CAMERA_MOTION, Renderer.MSG_SET_CAMERA_MOTION_LISTENER, listener);
   }
 
   @Override
@@ -1021,20 +947,8 @@ public class SimpleExoPlayer extends BasePlayer
     if (cameraMotionListener != listener) {
       return;
     }
-    for (Renderer renderer : renderers) {
-      if (renderer.getTrackType() == C.TRACK_TYPE_CAMERA_MOTION) {
-        player
-            .createMessage(renderer)
-            .setType(Renderer.MSG_SET_CAMERA_MOTION_LISTENER)
-            .setPayload(null)
-            .send();
-      }
-    }
-  }
-
-  /** Returns whether skipping silences in the audio stream is enabled. */
-  public boolean isSkipSilenceEnabled() {
-    return skipSilenceEnabled;
+    sendRendererMessage(
+        C.TRACK_TYPE_CAMERA_MOTION, Renderer.MSG_SET_CAMERA_MOTION_LISTENER, /* payload= */ null);
   }
 
   /**
@@ -1888,15 +1802,10 @@ public class SimpleExoPlayer extends BasePlayer
 
   private void setVideoDecoderOutputBufferRendererInternal(
       @Nullable VideoDecoderOutputBufferRenderer videoDecoderOutputBufferRenderer) {
-    for (Renderer renderer : renderers) {
-      if (renderer.getTrackType() == C.TRACK_TYPE_VIDEO) {
-        player
-            .createMessage(renderer)
-            .setType(Renderer.MSG_SET_VIDEO_DECODER_OUTPUT_BUFFER_RENDERER)
-            .setPayload(videoDecoderOutputBufferRenderer)
-            .send();
-      }
-    }
+    sendRendererMessage(
+        C.TRACK_TYPE_VIDEO,
+        Renderer.MSG_SET_VIDEO_DECODER_OUTPUT_BUFFER_RENDERER,
+        videoDecoderOutputBufferRenderer);
     this.videoDecoderOutputBufferRenderer = videoDecoderOutputBufferRenderer;
   }
 
@@ -1912,15 +1821,7 @@ public class SimpleExoPlayer extends BasePlayer
 
   private void sendVolumeToRenderers() {
     float scaledVolume = audioVolume * audioFocusManager.getVolumeMultiplier();
-    for (Renderer renderer : renderers) {
-      if (renderer.getTrackType() == C.TRACK_TYPE_AUDIO) {
-        player
-            .createMessage(renderer)
-            .setType(Renderer.MSG_SET_VOLUME)
-            .setPayload(scaledVolume)
-            .send();
-      }
-    }
+    sendRendererMessage(C.TRACK_TYPE_AUDIO, Renderer.MSG_SET_VOLUME, scaledVolume);
   }
 
   private void notifyAudioSessionIdSet() {
@@ -1991,6 +1892,14 @@ public class SimpleExoPlayer extends BasePlayer
           WRONG_THREAD_ERROR_MESSAGE,
           hasNotifiedFullWrongThreadWarning ? null : new IllegalStateException());
       hasNotifiedFullWrongThreadWarning = true;
+    }
+  }
+
+  private void sendRendererMessage(int trackType, int messageType, @Nullable Object payload) {
+    for (Renderer renderer : renderers) {
+      if (renderer.getTrackType() == trackType) {
+        player.createMessage(renderer).setType(messageType).setPayload(payload).send();
+      }
     }
   }
 
