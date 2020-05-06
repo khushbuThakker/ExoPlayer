@@ -354,7 +354,6 @@ public class SimpleExoPlayer extends BasePlayer
   private final CopyOnWriteArraySet<AudioRendererEventListener> audioDebugListeners;
   private final BandwidthMeter bandwidthMeter;
   private final AnalyticsCollector analyticsCollector;
-
   private final AudioBecomingNoisyManager audioBecomingNoisyManager;
   private final AudioFocusManager audioFocusManager;
   private final StreamVolumeManager streamVolumeManager;
@@ -660,11 +659,13 @@ public class SimpleExoPlayer extends BasePlayer
 
   @Override
   public void addAudioListener(AudioListener listener) {
+    // Don't verify application thread. We allow calls to this method from any thread.
     audioListeners.add(listener);
   }
 
   @Override
   public void removeAudioListener(AudioListener listener) {
+    // Don't verify application thread. We allow calls to this method from any thread.
     audioListeners.remove(listener);
   }
 
@@ -808,7 +809,7 @@ public class SimpleExoPlayer extends BasePlayer
    * @param listener The listener to be added.
    */
   public void addAnalyticsListener(AnalyticsListener listener) {
-    verifyApplicationThread();
+    // Don't verify application thread. We allow calls to this method from any thread.
     analyticsCollector.addListener(listener);
   }
 
@@ -818,7 +819,7 @@ public class SimpleExoPlayer extends BasePlayer
    * @param listener The listener to be removed.
    */
   public void removeAnalyticsListener(AnalyticsListener listener) {
-    verifyApplicationThread();
+    // Don't verify application thread. We allow calls to this method from any thread.
     analyticsCollector.removeListener(listener);
   }
 
@@ -907,11 +908,13 @@ public class SimpleExoPlayer extends BasePlayer
 
   @Override
   public void addVideoListener(com.google.android.exoplayer2.video.VideoListener listener) {
+    // Don't verify application thread. We allow calls to this method from any thread.
     videoListeners.add(listener);
   }
 
   @Override
   public void removeVideoListener(com.google.android.exoplayer2.video.VideoListener listener) {
+    // Don't verify application thread. We allow calls to this method from any thread.
     videoListeners.remove(listener);
   }
 
@@ -981,15 +984,20 @@ public class SimpleExoPlayer extends BasePlayer
 
   @Override
   public void addTextOutput(TextOutput listener) {
-    if (!currentCues.isEmpty()) {
-      listener.onCues(currentCues);
-    }
+    // Don't verify application thread. We allow calls to this method from any thread.
     textOutputs.add(listener);
   }
 
   @Override
   public void removeTextOutput(TextOutput listener) {
+    // Don't verify application thread. We allow calls to this method from any thread.
     textOutputs.remove(listener);
+  }
+
+  @Override
+  public List<Cue> getCurrentCues() {
+    verifyApplicationThread();
+    return currentCues;
   }
 
   /**
@@ -1019,11 +1027,13 @@ public class SimpleExoPlayer extends BasePlayer
 
   @Override
   public void addMetadataOutput(MetadataOutput listener) {
+    // Don't verify application thread. We allow calls to this method from any thread.
     metadataOutputs.add(listener);
   }
 
   @Override
   public void removeMetadataOutput(MetadataOutput listener) {
+    // Don't verify application thread. We allow calls to this method from any thread.
     metadataOutputs.remove(listener);
   }
 
@@ -1128,13 +1138,13 @@ public class SimpleExoPlayer extends BasePlayer
 
   @Override
   public void addListener(Player.EventListener listener) {
-    verifyApplicationThread();
+    // Don't verify application thread. We allow calls to this method from any thread.
     player.addListener(listener);
   }
 
   @Override
   public void removeListener(Player.EventListener listener) {
-    verifyApplicationThread();
+    // Don't verify application thread. We allow calls to this method from any thread.
     player.removeListener(listener);
   }
 
@@ -1689,11 +1699,13 @@ public class SimpleExoPlayer extends BasePlayer
 
   @Override
   public void addDeviceListener(DeviceListener listener) {
+    // Don't verify application thread. We allow calls to this method from any thread.
     deviceListeners.add(listener);
   }
 
   @Override
   public void removeDeviceListener(DeviceListener listener) {
+    // Don't verify application thread. We allow calls to this method from any thread.
     deviceListeners.remove(listener);
   }
 

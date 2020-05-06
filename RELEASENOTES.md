@@ -3,6 +3,9 @@
 ### dev-v2 (not yet released)
 
 *   Core library:
+    *   Added `TextComponent.getCurrentCues` because the current cues are no
+        longer forwarded to a new `TextOutput` in `SimpleExoPlayer`
+        automatically.
     *   Add opt-in to verify correct thread usage with
         `SimpleExoPlayer.setThrowsWhenUsingWrongThread(true)`
         ([#4463](https://github.com/google/ExoPlayer/issues/4463)).
@@ -176,6 +179,11 @@
     used for AV1 playback using the extension.
 *   IMA extension: Upgrade to IMA SDK version 3.18.1, and migrate to new
     preloading APIs ([#6429](https://github.com/google/ExoPlayer/issues/6429)).
+*   OkHttp extension: Upgrade OkHttp dependency to 3.12.11.
+*   Cronet extension: Default to using the Cronet implementation in Google Play
+    Services rather than Cronet Embedded. This allows Cronet to be used with a
+    negligible increase in application size, compared to approximately 8MB when
+    embedding the library.
 
 ### 2.11.4 (2020-04-08)
 
