@@ -45,7 +45,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
+import com.google.android.exoplayer2.util.Log;
 /**
  * Decodes and renders audio using {@link MediaCodec} and an {@link AudioSink}.
  *
@@ -463,12 +463,13 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
       // E-AC3 JOC is object-based so the output channel count is arbitrary.
       if (audioSink.supportsOutput(
           /* channelCount= */ Format.NO_VALUE, format.sampleRate, C.ENCODING_E_AC3_JOC)) {
+      Log.w("AAC_CHECK", "getPassthroughEncoding  MimeTypes.getEncoding " + MimeTypes.AUDIO_E_AC3_JOC + " format.codecs " + format.codecs);
         return MimeTypes.getEncoding(MimeTypes.AUDIO_E_AC3_JOC, format.codecs);
       }
       // E-AC3 receivers can decode JOC streams, but in 2-D rather than 3-D, so try to fall back.
       mimeType = MimeTypes.AUDIO_E_AC3;
     }
-
+    Log.w("AAC_CHECK", "getPassthroughEncoding  MimeTypes.getEncoding " + mimeType + " format.codecs " + format.codecs);
     @C.Encoding int encoding = MimeTypes.getEncoding(mimeType, format.codecs);
     if (audioSink.supportsOutput(format.channelCount, format.sampleRate, encoding)) {
       return encoding;

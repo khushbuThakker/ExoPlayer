@@ -22,7 +22,7 @@ import com.google.android.exoplayer2.audio.AacUtil;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
+import com.google.android.exoplayer2.util.Log;
 /**
  * Defines common MIME types and helper methods.
  */
@@ -299,6 +299,8 @@ public final class MimeTypes {
           mimeType = getMimeTypeFromMp4ObjectType(objectType.objectTypeIndication);
         }
       }
+      Log.w("AAC_CHECK", "getMediaMimeType  mimeType " + mimeType);
+
       return mimeType == null ? MimeTypes.AUDIO_AAC : mimeType;
     } else if (codec.startsWith("ac-3") || codec.startsWith("dac3")) {
       return MimeTypes.AUDIO_AC3;
@@ -431,13 +433,17 @@ public final class MimeTypes {
       case MimeTypes.AUDIO_MPEG:
         return C.ENCODING_MP3;
       case MimeTypes.AUDIO_AAC:
+        Log.w("AAC_CHECK", "getEncoding MimeTypes.AUDIO_AAC");
         if (codecs == null) {
+          Log.w("AAC_CHECK", "getEncoding codecs == null");
           return C.ENCODING_INVALID;
         }
         @Nullable Mp4aObjectType objectType = getObjectTypeFromMp4aRFC6381CodecString(codecs);
         if (objectType == null) {
+          Log.w("AAC_CHECK", "getEncoding objectType == null");
           return C.ENCODING_INVALID;
         }
+        Log.w("AAC_CHECK", "getEncoding objectType.audioObjectTypeIndication " + objectType.audioObjectTypeIndication);
         return AacUtil.getEncodingForAudioObjectType(objectType.audioObjectTypeIndication);
       case MimeTypes.AUDIO_AC3:
         return C.ENCODING_AC3;
@@ -483,8 +489,10 @@ public final class MimeTypes {
    */
   @Nullable
   public static Mp4aObjectType getObjectTypeFromMp4aRFC6381CodecString(String codec) {
+    Log.w("AAC_CHECK", "getObjectTypeFromMp4aRFC6381CodecString");
     Matcher matcher = MP4A_RFC_6381_CODEC_PATTERN.matcher(codec);
     if (!matcher.matches()) {
+        Log.w("AAC_CHECK", "getObjectTypeFromMp4aRFC6381CodecString !matcher.matches()");
       return null;
     }
     String objectTypeIndicationHex = Assertions.checkNotNull(matcher.group(1));
@@ -497,8 +505,10 @@ public final class MimeTypes {
         audioObjectTypeIndication = Integer.parseInt(audioObjectTypeIndicationDec);
       }
     } catch (NumberFormatException e) {
+      Log.w("AAC_CHECK", "getObjectTypeFromMp4aRFC6381CodecString NumberFormatException");
       return null;
     }
+    Log.w("AAC_CHECK", "getObjectTypeFromMp4aRFC6381CodecString objectTypeIndication " + objectTypeIndication + " audioObjectTypeIndication " + audioObjectTypeIndication);
     return new Mp4aObjectType(objectTypeIndication, audioObjectTypeIndication);
   }
 
