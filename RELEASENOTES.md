@@ -12,9 +12,6 @@
     *   Add opt-in to verify correct thread usage with
         `SimpleExoPlayer.setThrowsWhenUsingWrongThread(true)`
         ([#4463](https://github.com/google/ExoPlayer/issues/4463)).
-    *   Fix bug where `PlayerMessages` throw an exception after `MediaSources`
-        are removed from the playlist
-        ([#7278](https://github.com/google/ExoPlayer/issues/7278)).
     *   Add playbackPositionUs parameter to 'LoadControl.shouldContinueLoading'.
     *   The `DefaultLoadControl` default minimum buffer is set to 50 seconds,
         equal to the default maximum buffer. `DefaultLoadControl` applies the
@@ -88,6 +85,8 @@
     *   Extend `EventTime` with more details about the current player state for
         easier access
         ([#7332](https://github.com/google/ExoPlayer/issues/7332)).
+    *   Add `HttpDataSource.InvalidResponseCodeException#responseBody` field
+        ([#6853](https://github.com/google/ExoPlayer/issues/6853)).
 *   Video: Pass frame rate hint to `Surface.setFrameRate` on Android R devices.
 *   Text:
     *   Parse `<ruby>` and `<rt>` tags in WebVTT subtitles (rendering is coming
@@ -173,6 +172,8 @@
         `exo_playback_control_view.xml` from resource.
     *   Move logic of prev, next, fast forward and rewind to ControlDispatcher
         ([#6926](https://github.com/google/ExoPlayer/issues/6926)).
+    *   Update `TrackSelectionDialogBuilder` to use AndroidX Compat Dialog
+        ([#7357](https://github.com/google/ExoPlayer/issues/7357)).
 *   Metadata: Add minimal DVB Application Information Table (AIT) support
     ([#6922](https://github.com/google/ExoPlayer/pull/6922)).
 *   Cast extension: Implement playlist API and deprecate the old queue
@@ -181,34 +182,25 @@
 *   Change the order of extractors for sniffing to reduce start-up latency in
     `DefaultExtractorsFactory` and `DefaultHlsExtractorsFactory`
     ([#6410](https://github.com/google/ExoPlayer/issues/6410)).
-*   IMA extension:
-    *   Upgrade to IMA SDK version 3.19.0, and migrate to new preloading APIs
-        ([#6429](https://github.com/google/ExoPlayer/issues/6429)). This fixes
-        several issues involving preloading and handling of ad loading error
-        cases: ([#4140](https://github.com/google/ExoPlayer/issues/4140),
-        [#5006](https://github.com/google/ExoPlayer/issues/5006),
-        [#6030](https://github.com/google/ExoPlayer/issues/6030),
-        [#6097](https://github.com/google/ExoPlayer/issues/6097),
-        [#6425](https://github.com/google/ExoPlayer/issues/6425),
-        [#6967](https://github.com/google/ExoPlayer/issues/6967),
-        [#7041](https://github.com/google/ExoPlayer/issues/7041),
-        [#7161](https://github.com/google/ExoPlayer/issues/7161),
-        [#7212](https://github.com/google/ExoPlayer/issues/7212),
-        [#7340](https://github.com/google/ExoPlayer/issues/7340)).
-    *   Add support for timing out ad preloading, to avoid playback getting
-        stuck if an ad group unexpectedly fails to load
-        ([#5444](https://github.com/google/ExoPlayer/issues/5444),
-        [#5966](https://github.com/google/ExoPlayer/issues/5966),
-        [#7002](https://github.com/google/ExoPlayer/issues/7002)).
 *   Add Guava dependency.
 
-### 2.11.5 (not yet released) ###
+### 2.11.5 (2020-06-03) ###
 
+*   Improve the smoothness of video playback immediately after starting, seeking
+    or resuming a playback
+    ([#6901](https://github.com/google/ExoPlayer/issues/6901)).
 *   Add `SilenceMediaSource.Factory` to support tags.
 *   Enable the configuration of `SilenceSkippingAudioProcessor`
     ([#6705](https://github.com/google/ExoPlayer/issues/6705)).
-*   Ads:
-    *   Fix `AdsMediaSource` child `MediaSource`s not being released.
+*   Fix bug where `PlayerMessages` throw an exception after `MediaSources`
+    are removed from the playlist
+    ([#7278](https://github.com/google/ExoPlayer/issues/7278)).
+*   Fix "Not allowed to start service" `IllegalStateException` in
+    `DownloadService`
+    ([#7306](https://github.com/google/ExoPlayer/issues/7306)).
+*   Fix issue in `AudioTrackPositionTracker` that could cause negative positions
+    to be reported at the start of playback and immediately after seeking
+    ([#7456](https://github.com/google/ExoPlayer/issues/7456).
 *   DASH:
     *   Merge trick play adaptation sets (i.e., adaptation sets marked with
         `http://dashif.org/guidelines/trickmode`) into the same `TrackGroup` as
@@ -229,13 +221,32 @@
     *   Fix `DefaultTimeBar` to respect touch transformations
         ([#7303](https://github.com/google/ExoPlayer/issues/7303)).
     *   Add `showScrubber` and `hideScrubber` methods to `DefaultTimeBar`.
-    *   Update `TrackSelectionDialogBuilder` to use AndroidX Compat Dialog
-        ([#7357](https://github.com/google/ExoPlayer/issues/7357)).
 *   Text:
     *   Use anti-aliasing and bitmap filtering when displaying bitmap
         subtitles.
     *   Fix `SubtitlePainter` to render `EDGE_TYPE_OUTLINE` using the correct
         color.
+*   IMA extension:
+    *   Upgrade to IMA SDK version 3.19.0, and migrate to new
+        preloading APIs
+        ([#6429](https://github.com/google/ExoPlayer/issues/6429)). This fixes
+        several issues involving preloading and handling of ad loading error
+        cases: ([#4140](https://github.com/google/ExoPlayer/issues/4140),
+        [#5006](https://github.com/google/ExoPlayer/issues/5006),
+        [#6030](https://github.com/google/ExoPlayer/issues/6030),
+        [#6097](https://github.com/google/ExoPlayer/issues/6097),
+        [#6425](https://github.com/google/ExoPlayer/issues/6425),
+        [#6967](https://github.com/google/ExoPlayer/issues/6967),
+        [#7041](https://github.com/google/ExoPlayer/issues/7041),
+        [#7161](https://github.com/google/ExoPlayer/issues/7161),
+        [#7212](https://github.com/google/ExoPlayer/issues/7212),
+        [#7340](https://github.com/google/ExoPlayer/issues/7340)).
+    *   Add support for timing out ad preloading, to avoid playback getting
+        stuck if an ad group unexpectedly fails to load
+        ([#5444](https://github.com/google/ExoPlayer/issues/5444),
+        [#5966](https://github.com/google/ExoPlayer/issues/5966),
+        [#7002](https://github.com/google/ExoPlayer/issues/7002)).
+    *   Fix `AdsMediaSource` child `MediaSource`s not being released.
 *   Cronet extension: Default to using the Cronet implementation in Google Play
     Services rather than Cronet Embedded. This allows Cronet to be used with a
     negligible increase in application size, compared to approximately 8MB when
