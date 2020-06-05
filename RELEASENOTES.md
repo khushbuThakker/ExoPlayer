@@ -3,6 +3,7 @@
 ### dev-v2 (not yet released)
 
 *   Core library:
+    *   Implement getTag for SilenceMediaSource.
     *   Add `Player.getTrackSelector` to access track selector from UI module.
     *   Added `TextComponent.getCurrentCues` because the current cues are no
         longer forwarded to a new `TextOutput` in `SimpleExoPlayer`
@@ -156,12 +157,21 @@
 *   HLS:
     *   Add support for upstream discard including cancelation of ongoing load
         ([#6322](https://github.com/google/ExoPlayer/issues/6322)).
-*   MP3:
-    *   Add `IndexSeeker` for accurate seeks in VBR streams
+    *   Respect 33-bit PTS wrapping when applying `X-TIMESTAMP-MAP` to WebVTT
+        timestamps ([#7464](https://github.com/google/ExoPlayer/issues/7464)).
+*   Ogg: Allow non-contiguous pages
+    ([#7230](https://github.com/google/ExoPlayer/issues/7230)).
+*   Extractors:
+    *   Add `IndexSeeker` for accurate seeks in VBR MP3 streams
         ([#6787](https://github.com/google/ExoPlayer/issues/6787)). This seeker
         is enabled by passing `FLAG_ENABLE_INDEX_SEEKING` to the `Mp3Extractor`.
         It may require to scan a significant portion of the file for seeking,
         which may be costly on large files.
+    *   Change the order of extractors for sniffing to reduce start-up latency
+        in `DefaultExtractorsFactory` and `DefaultHlsExtractorsFactory`
+        ([#6410](https://github.com/google/ExoPlayer/issues/6410)).
+    *   Select first extractors based on the filename extension in
+        `DefaultExtractorsFactory`.
 *   Testing
     *   Add `TestExoPlayer`, a utility class with APIs to create
         `SimpleExoPlayer` instances with fake components for testing.
@@ -179,12 +189,9 @@
 *   Cast extension: Implement playlist API and deprecate the old queue
     manipulation API.
 *   Demo app: Retain previous position in list of samples.
-*   Change the order of extractors for sniffing to reduce start-up latency in
-    `DefaultExtractorsFactory` and `DefaultHlsExtractorsFactory`
-    ([#6410](https://github.com/google/ExoPlayer/issues/6410)).
 *   Add Guava dependency.
 
-### 2.11.5 (2020-06-03) ###
+### 2.11.5 (2020-06-05) ###
 
 *   Improve the smoothness of video playback immediately after starting, seeking
     or resuming a playback
@@ -201,6 +208,9 @@
 *   Fix issue in `AudioTrackPositionTracker` that could cause negative positions
     to be reported at the start of playback and immediately after seeking
     ([#7456](https://github.com/google/ExoPlayer/issues/7456).
+*   Fix further cases where downloads would sometimes not resume after their
+    network requirements are met
+    ([#7453](https://github.com/google/ExoPlayer/issues/7453).
 *   DASH:
     *   Merge trick play adaptation sets (i.e., adaptation sets marked with
         `http://dashif.org/guidelines/trickmode`) into the same `TrackGroup` as
