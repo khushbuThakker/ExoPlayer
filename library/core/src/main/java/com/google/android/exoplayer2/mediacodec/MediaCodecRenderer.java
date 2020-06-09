@@ -76,6 +76,8 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
    *   <li>{@link #OPERATION_MODE_ASYNCHRONOUS_PLAYBACK_THREAD}
    *   <li>{@link #OPERATION_MODE_ASYNCHRONOUS_DEDICATED_THREAD}
    *   <li>{@link #OPERATION_MODE_ASYNCHRONOUS_DEDICATED_THREAD_MULTI_LOCK}
+   *   <li>{@link #OPERATION_MODE_ASYNCHRONOUS_DEDICATED_THREAD_ASYNCHRONOUS_QUEUEING}
+   *   <li>{@link #OPERATION_MODE_ASYNCHRONOUS_DEDICATED_THREAD_MULTI_LOCK_ASYNCHRONOUS_QUEUEING}
    * </ul>
    */
   @Documented
@@ -1391,8 +1393,15 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
       formatQueue.add(presentationTimeUs, inputFormat);
       waitingForFirstSampleInFormat = false;
     }
-    largestQueuedPresentationTimeUs = Math.max(largestQueuedPresentationTimeUs, presentationTimeUs);
 
+    // TODO(b/158483277): Find the root cause of why a gap is introduced in MP3 playback when using
+    // presentationTimeUs from the c2Mp3TimestampTracker.
+    if (c2Mp3TimestampTracker != null) {
+      largestQueuedPresentationTimeUs = Math.max(largestQueuedPresentationTimeUs, buffer.timeUs);
+    } else {
+      largestQueuedPresentationTimeUs =
+          Math.max(largestQueuedPresentationTimeUs, presentationTimeUs);
+    }
     buffer.flip();
     if (buffer.hasSupplementalData()) {
       handleInputBufferSupplementalData(buffer);
