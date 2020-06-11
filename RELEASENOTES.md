@@ -88,6 +88,9 @@
         ([#7332](https://github.com/google/ExoPlayer/issues/7332)).
     *   Add `HttpDataSource.InvalidResponseCodeException#responseBody` field
         ([#6853](https://github.com/google/ExoPlayer/issues/6853)).
+    *   Add `TrackSelection.shouldCancelMediaChunkLoad` to check whether an
+        ongoing load should be canceled. Only supported by HLS streams so far.
+        ([#2848](https://github.com/google/ExoPlayer/issues/2848)).
 *   Video: Pass frame rate hint to `Surface.setFrameRate` on Android R devices.
 *   Text:
     *   Parse `<ruby>` and `<rt>` tags in WebVTT subtitles (rendering is coming
@@ -146,6 +149,8 @@
         initialization vector used to encrypt the cache contents.
     *   Add `Requirements.DEVICE_STORAGE_NOT_LOW`, which can be specified as a
         requirement to a `DownloadManager` for it to proceed with downloading.
+    *   For failed downloads, propagate the `Exception` that caused the failure
+        to `DownloadManager.Listener.onDownloadChanged`.
 *   Audio:
     *   Add a sample count parameter to `MediaCodecRenderer.processOutputBuffer`
         and `AudioSink.handleBuffer` to allow batching multiple encoded frames
@@ -174,8 +179,8 @@
     *   Change the order of extractors for sniffing to reduce start-up latency
         in `DefaultExtractorsFactory` and `DefaultHlsExtractorsFactory`
         ([#6410](https://github.com/google/ExoPlayer/issues/6410)).
-    *   Select first extractors based on the filename extension in
-        `DefaultExtractorsFactory`.
+    *   Select first extractors based on the filename extension and the response
+        headers mime type in `DefaultExtractorsFactory`.
 *   Testing
     *   Add `TestExoPlayer`, a utility class with APIs to create
         `SimpleExoPlayer` instances with fake components for testing.
@@ -191,6 +196,10 @@
         ([#6926](https://github.com/google/ExoPlayer/issues/6926)).
     *   Update `TrackSelectionDialogBuilder` to use AndroidX Compat Dialog
         ([#7357](https://github.com/google/ExoPlayer/issues/7357)).
+    *   Prevent the video surface going black when seeking to an unprepared
+        period within the current window. For example when seeking over an ad
+        group, or to the next period in a multi-period DASH stream
+        ([#5507](https://github.com/google/ExoPlayer/issues/5507)).
 *   Metadata: Add minimal DVB Application Information Table (AIT) support
     ([#6922](https://github.com/google/ExoPlayer/pull/6922)).
 *   Cast extension: Implement playlist API and deprecate the old queue
