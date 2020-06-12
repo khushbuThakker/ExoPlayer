@@ -715,7 +715,7 @@ public final class ImaAdsLoader
     }
     try {
       handleAdPrepareError(adGroupIndex, adIndexInAdGroup, exception);
-    } catch (Exception e) {
+    } catch (RuntimeException e) {
       maybeNotifyInternalError("handlePrepareError", e);
     }
   }
@@ -742,7 +742,7 @@ public final class ImaAdsLoader
         adPlaybackState = new AdPlaybackState(getAdGroupTimesUs(adsManager.getAdCuePoints()));
         hasAdPlaybackState = true;
         updateAdPlaybackState();
-      } catch (Exception e) {
+      } catch (RuntimeException e) {
         maybeNotifyInternalError("onAdsManagerLoaded", e);
       }
     }
@@ -762,7 +762,7 @@ public final class ImaAdsLoader
     }
     try {
       handleAdEvent(adEvent);
-    } catch (Exception e) {
+    } catch (RuntimeException e) {
       maybeNotifyInternalError("onAdEvent", e);
     }
   }
@@ -784,7 +784,7 @@ public final class ImaAdsLoader
     } else if (isAdGroupLoadError(error)) {
       try {
         handleAdGroupLoadError(error);
-      } catch (Exception e) {
+      } catch (RuntimeException e) {
         maybeNotifyInternalError("onAdError", e);
       }
     }
@@ -885,7 +885,7 @@ public final class ImaAdsLoader
       adPlaybackState =
           adPlaybackState.withAdUri(adInfo.adGroupIndex, adInfo.adIndexInAdGroup, adUri);
       updateAdPlaybackState();
-    } catch (Exception e) {
+    } catch (RuntimeException e) {
       maybeNotifyInternalError("loadAd", e);
     }
   }
@@ -916,32 +916,36 @@ public final class ImaAdsLoader
       Log.w(TAG, "Unexpected playAd without stopAd");
     }
 
-    if (imaAdState == IMA_AD_STATE_NONE) {
-      // IMA is requesting to play the ad, so stop faking the content position.
-      fakeContentProgressElapsedRealtimeMs = C.TIME_UNSET;
-      fakeContentProgressOffsetMs = C.TIME_UNSET;
-      imaAdState = IMA_AD_STATE_PLAYING;
-      imaAdMediaInfo = adMediaInfo;
-      imaAdInfo = Assertions.checkNotNull(adInfoByAdMediaInfo.get(adMediaInfo));
-      for (int i = 0; i < adCallbacks.size(); i++) {
-        adCallbacks.get(i).onPlay(adMediaInfo);
-      }
-      if (pendingAdPrepareErrorAdInfo != null && pendingAdPrepareErrorAdInfo.equals(imaAdInfo)) {
-        pendingAdPrepareErrorAdInfo = null;
+    try {
+      if (imaAdState == IMA_AD_STATE_NONE) {
+        // IMA is requesting to play the ad, so stop faking the content position.
+        fakeContentProgressElapsedRealtimeMs = C.TIME_UNSET;
+        fakeContentProgressOffsetMs = C.TIME_UNSET;
+        imaAdState = IMA_AD_STATE_PLAYING;
+        imaAdMediaInfo = adMediaInfo;
+        imaAdInfo = Assertions.checkNotNull(adInfoByAdMediaInfo.get(adMediaInfo));
         for (int i = 0; i < adCallbacks.size(); i++) {
-          adCallbacks.get(i).onError(adMediaInfo);
+          adCallbacks.get(i).onPlay(adMediaInfo);
+        }
+        if (pendingAdPrepareErrorAdInfo != null && pendingAdPrepareErrorAdInfo.equals(imaAdInfo)) {
+          pendingAdPrepareErrorAdInfo = null;
+          for (int i = 0; i < adCallbacks.size(); i++) {
+            adCallbacks.get(i).onError(adMediaInfo);
+          }
+        }
+        updateAdProgress();
+      } else {
+        imaAdState = IMA_AD_STATE_PLAYING;
+        Assertions.checkState(adMediaInfo.equals(imaAdMediaInfo));
+        for (int i = 0; i < adCallbacks.size(); i++) {
+          adCallbacks.get(i).onResume(adMediaInfo);
         }
       }
-      updateAdProgress();
-    } else {
-      imaAdState = IMA_AD_STATE_PLAYING;
-      Assertions.checkState(adMediaInfo.equals(imaAdMediaInfo));
-      for (int i = 0; i < adCallbacks.size(); i++) {
-        adCallbacks.get(i).onResume(adMediaInfo);
+      if (!Assertions.checkNotNull(player).getPlayWhenReady()) {
+        Assertions.checkNotNull(adsManager).pause();
       }
-    }
-    if (!Assertions.checkNotNull(player).getPlayWhenReady()) {
-      Assertions.checkNotNull(adsManager).pause();
+    } catch (RuntimeException e) {
+      maybeNotifyInternalError("playAd", e);
     }
   }
 
@@ -955,11 +959,11 @@ public final class ImaAdsLoader
       return;
     }
 
-    Assertions.checkNotNull(player);
-    Assertions.checkState(imaAdState != IMA_AD_STATE_NONE);
     try {
+      Assertions.checkNotNull(player);
+      Assertions.checkState(imaAdState != IMA_AD_STATE_NONE);
       stopAdInternal();
-    } catch (Exception e) {
+    } catch (RuntimeException e) {
       maybeNotifyInternalError("stopAd", e);
     }
   }
@@ -973,10 +977,15 @@ public final class ImaAdsLoader
       // This method is called after content is resumed.
       return;
     }
-    Assertions.checkState(adMediaInfo.equals(imaAdMediaInfo));
-    imaAdState = IMA_AD_STATE_PAUSED;
-    for (int i = 0; i < adCallbacks.size(); i++) {
-      adCallbacks.get(i).onPause(adMediaInfo);
+
+    try {
+      Assertions.checkState(adMediaInfo.equals(imaAdMediaInfo));
+      imaAdState = IMA_AD_STATE_PAUSED;
+      for (int i = 0; i < adCallbacks.size(); i++) {
+        adCallbacks.get(i).onPause(adMediaInfo);
+      }
+    } catch (RuntimeException e) {
+      maybeNotifyInternalError("pauseAd", e);
     }
   }
 
