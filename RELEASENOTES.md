@@ -74,7 +74,9 @@
     *   `SimpleDecoderVideoRenderer` and `SimpleDecoderAudioRenderer` renamed to
         `DecoderVideoRenderer` and `DecoderAudioRenderer` respectively, and
         generalized to work with `Decoder` rather than `SimpleDecoder`.
-    *   Add media item based playlist API to Player.
+    *   Add media item based playlist API to `Player`.
+    *   Add `getCurrentMediaItem` to `Player`.
+    *   Remove deprecated members in `DefaultTrackSelector`.
     *   Add `Player.DeviceComponent` and implement it for `SimpleExoPlayer` so
         that the device volume can be controlled by player.
     *   Parse track titles from Matroska files
@@ -174,6 +176,7 @@
         timestamps ([#7464](https://github.com/google/ExoPlayer/issues/7464)).
 *   Ogg: Allow non-contiguous pages
     ([#7230](https://github.com/google/ExoPlayer/issues/7230)).
+*   Matroska: Remove support for "Invisible" block header flag.
 *   Extractors:
     *   Add `IndexSeeker` for accurate seeks in VBR MP3 streams
         ([#6787](https://github.com/google/ExoPlayer/issues/6787)). This seeker
@@ -211,6 +214,14 @@
 *   IMA extension:
     *   Add option to skip ads before the start position.
     *   Catch unexpected errors in `stopAd` to avoid a crash
+        ([#7492](https://github.com/google/ExoPlayer/issues/7492)).
+    *   Fix a bug that caused playback to be stuck buffering on resuming from
+        the background after all ads had played to the end
+        ([#7508](https://github.com/google/ExoPlayer/issues/7508)).
+    *   Fix a bug where the number of ads in an ad group couldn't change
+        ([#7477](https://github.com/google/ExoPlayer/issues/7477)).
+    *   Work around unexpected `pauseAd`/`stopAd` for ads that have preloaded
+        on seeking to another position
         ([#7492](https://github.com/google/ExoPlayer/issues/7492)).
 *   Demo app: Retain previous position in list of samples.
 *   Add Guava dependency.
