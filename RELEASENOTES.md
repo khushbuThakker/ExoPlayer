@@ -133,6 +133,8 @@
     *   Add support for WebVTT's `ruby-position` CSS property.
     *   Fix positioning for CEA-608 roll-up captions in the top half of screen
         ([#7475](https://github.com/google/ExoPlayer/issues/7475)).
+    *   Redefine `Cue.lineType=LINE_TYPE_NUMBER` in terms of aligning the cue
+        text lines to grid of viewport lines, and ignore `Cue.lineAnchor`.
 *   DRM:
     *   Add support for attaching DRM sessions to clear content in the demo app.
     *   Remove `DrmSessionManager` references from all renderers.
@@ -164,9 +166,12 @@
     *   No longer use a `MediaCodec` in audio passthrough mode.
     *   Check `DefaultAudioSink` supports passthrough, in addition to checking
         the `AudioCapabilities`
+    *   Add an experimental scheduling mode to save power in offload.
         ([#7404](https://github.com/google/ExoPlayer/issues/7404)).
     *   Adjust input timestamps in `MediaCodecRenderer` to account for the
         Codec2 MP3 decoder having lower timestamps on the output side.
+    *   Propagate gapless audio metadata without the need to recreate the audio
+        decoders.
 *   DASH:
     *   Enable support for embedded CEA-708.
 *   HLS:
@@ -194,6 +199,7 @@
     *   Upgrade Truth dependency from 0.44 to 1.0.
     *   Upgrade to JUnit 4.13-rc-2.
 *   UI
+    *   Remove `SimpleExoPlayerView` and `PlaybackControlView`.
     *   Remove deperecated `exo_simple_player_view.xml` and
         `exo_playback_control_view.xml` from resource.
     *   Add setter methods to `PlayerView` and `PlayerControlView` to set
@@ -209,6 +215,8 @@
     manipulation API.
 *   Demo app: Retain previous position in list of samples.
 *   Add Guava dependency.
+*   IMA extension: Fix the way 'content complete' is handled to avoid repeatedly
+    refreshing the timeline after playback ends.
 
 ### 2.11.6 (2020-06-19) ###
 
