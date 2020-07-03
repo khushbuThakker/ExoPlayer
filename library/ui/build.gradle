@@ -19,6 +19,7 @@ dependencies {
     implementation project(modulePrefix + 'library-core')
     api 'androidx.media:media:' + androidxMediaVersion
     implementation 'androidx.annotation:annotation:' + androidxAnnotationVersion
+    implementation 'androidx.recyclerview:recyclerview:' + androidxRecyclerViewVersion
     implementation 'com.google.guava:guava:' + guavaVersion
     compileOnly 'org.checkerframework:checker-qual:' + checkerframeworkVersion
     compileOnly 'org.jetbrains.kotlin:kotlin-annotations-jvm:' + kotlinAnnotationsVersion

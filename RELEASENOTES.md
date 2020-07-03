@@ -135,6 +135,8 @@
         ([#7475](https://github.com/google/ExoPlayer/issues/7475)).
     *   Redefine `Cue.lineType=LINE_TYPE_NUMBER` in terms of aligning the cue
         text lines to grid of viewport lines, and ignore `Cue.lineAnchor`.
+    *   Check `CaptionManager.isEnabled()` before using it for user-specified
+        font-scaling.
 *   DRM:
     *   Add support for attaching DRM sessions to clear content in the demo app.
     *   Remove `DrmSessionManager` references from all renderers.
@@ -144,8 +146,15 @@
         `OfflineLicenseHelper`
         ([#7078](https://github.com/google/ExoPlayer/issues/7078)).
     *   Remove generics from DRM components.
+    *   Keep DRM sessions alive for a short time before fully releasing them
+        ([#7011](https://github.com/google/ExoPlayer/issues/7011),
+        [#6725](https://github.com/google/ExoPlayer/issues/6725),
+        [#7066](https://github.com/google/ExoPlayer/issues/7066)).
 *   Downloads and caching:
-    *   Merge downloads in `SegmentDownloader` to improve overall download speed
+    *   Support passing an `Executor` to `DefaultDownloaderFactory` on which
+        data downloads are performed.
+    *   Parallelize and merge downloads in `SegmentDownloader` to improve
+        overall download speed
         ([#5978](https://github.com/google/ExoPlayer/issues/5978)).
     *   Support multiple non-overlapping write locks for the same key in
         `SimpleCache`.
@@ -199,6 +208,7 @@
     *   Upgrade Truth dependency from 0.44 to 1.0.
     *   Upgrade to JUnit 4.13-rc-2.
 *   UI
+    *   Add `StyledPlayerView` and `StyledPlayerControlView`.
     *   Remove `SimpleExoPlayerView` and `PlaybackControlView`.
     *   Remove deperecated `exo_simple_player_view.xml` and
         `exo_playback_control_view.xml` from resource.
@@ -215,8 +225,11 @@
     manipulation API.
 *   Demo app: Retain previous position in list of samples.
 *   Add Guava dependency.
-*   IMA extension: Fix the way 'content complete' is handled to avoid repeatedly
-    refreshing the timeline after playback ends.
+
+### 2.11.7 (2020-06-29) ###
+
+*   IMA extension: Fix the way postroll "content complete" notifications are
+    handled to avoid repeatedly refreshing the timeline after playback ends.
 
 ### 2.11.6 (2020-06-19) ###
 

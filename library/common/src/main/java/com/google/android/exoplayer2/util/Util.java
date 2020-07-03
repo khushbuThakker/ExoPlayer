@@ -64,6 +64,7 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
@@ -1936,6 +1937,8 @@ public final class Util {
    * @param context A context to access the connectivity manager.
    * @return The {@link C.NetworkType} of the current network connection.
    */
+  // Intentional null check to guard against user input.
+  @SuppressWarnings("known.nonnull")
   @C.NetworkType
   public static int getNetworkType(Context context) {
     if (context == null) {
@@ -1943,6 +1946,7 @@ public final class Util {
       return C.NETWORK_TYPE_UNKNOWN;
     }
     NetworkInfo networkInfo;
+    @Nullable
     ConnectivityManager connectivityManager =
         (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
     if (connectivityManager == null) {
@@ -1982,6 +1986,7 @@ public final class Util {
    */
   public static String getCountryCode(@Nullable Context context) {
     if (context != null) {
+      @Nullable
       TelephonyManager telephonyManager =
           (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
       if (telephonyManager != null) {
@@ -2061,6 +2066,7 @@ public final class Util {
    */
   public static boolean isTv(Context context) {
     // See https://developer.android.com/training/tv/start/hardware.html#runtime-check.
+    @Nullable
     UiModeManager uiModeManager =
         (UiModeManager) context.getApplicationContext().getSystemService(UI_MODE_SERVICE);
     return uiModeManager != null
@@ -2184,6 +2190,24 @@ public final class Util {
     return elapsedRealtimeEpochOffsetMs == C.TIME_UNSET
         ? System.currentTimeMillis()
         : SystemClock.elapsedRealtime() + elapsedRealtimeEpochOffsetMs;
+  }
+
+  /**
+   * Moves the elements starting at {@code fromIndex} to {@code newFromIndex}.
+   *
+   * @param items The list of which to move elements.
+   * @param fromIndex The index at which the items to move start.
+   * @param toIndex The index up to which elements should be moved (exclusive).
+   * @param newFromIndex The new from index.
+   */
+  public static <T extends Object> void moveItems(
+      List<T> items, int fromIndex, int toIndex, int newFromIndex) {
+    ArrayDeque<T> removedItems = new ArrayDeque<>();
+    int removedItemsLength = toIndex - fromIndex;
+    for (int i = removedItemsLength - 1; i >= 0; i--) {
+      removedItems.addFirst(items.remove(fromIndex + i));
+    }
+    items.addAll(Math.min(newFromIndex, items.size()), removedItems);
   }
 
   @Nullable
