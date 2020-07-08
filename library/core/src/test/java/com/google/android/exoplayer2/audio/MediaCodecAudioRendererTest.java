@@ -32,6 +32,7 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.RendererConfiguration;
+import com.google.android.exoplayer2.drm.DrmSessionEventListener;
 import com.google.android.exoplayer2.drm.DrmSessionManager;
 import com.google.android.exoplayer2.mediacodec.MediaCodecInfo;
 import com.google.android.exoplayer2.mediacodec.MediaCodecSelector;
@@ -111,17 +112,18 @@ public class MediaCodecAudioRendererTest {
 
     FakeSampleStream fakeSampleStream =
         new FakeSampleStream(
+            /* mediaSourceEventDispatcher= */ null,
             DrmSessionManager.DUMMY,
-            /* eventDispatcher= */ null,
+            new DrmSessionEventListener.EventDispatcher(),
             /* initialFormat= */ AUDIO_AAC,
             ImmutableList.of(
-                oneByteSample(/* timeUs= */ 0),
-                oneByteSample(/* timeUs= */ 50),
-                oneByteSample(/* timeUs= */ 100),
+                oneByteSample(/* timeUs= */ 0, C.BUFFER_FLAG_KEY_FRAME),
+                oneByteSample(/* timeUs= */ 50, C.BUFFER_FLAG_KEY_FRAME),
+                oneByteSample(/* timeUs= */ 100, C.BUFFER_FLAG_KEY_FRAME),
                 format(changedFormat),
-                oneByteSample(/* timeUs= */ 150),
-                oneByteSample(/* timeUs= */ 200),
-                oneByteSample(/* timeUs= */ 250),
+                oneByteSample(/* timeUs= */ 150, C.BUFFER_FLAG_KEY_FRAME),
+                oneByteSample(/* timeUs= */ 200, C.BUFFER_FLAG_KEY_FRAME),
+                oneByteSample(/* timeUs= */ 250, C.BUFFER_FLAG_KEY_FRAME),
                 END_OF_STREAM_ITEM));
 
     mediaCodecAudioRenderer.enable(
@@ -158,17 +160,18 @@ public class MediaCodecAudioRendererTest {
 
     FakeSampleStream fakeSampleStream =
         new FakeSampleStream(
+            /* mediaSourceEventDispatcher= */ null,
             DrmSessionManager.DUMMY,
-            /* eventDispatcher= */ null,
+            new DrmSessionEventListener.EventDispatcher(),
             /* initialFormat= */ AUDIO_AAC,
             ImmutableList.of(
-                oneByteSample(/* timeUs= */ 0),
-                oneByteSample(/* timeUs= */ 50),
-                oneByteSample(/* timeUs= */ 100),
+                oneByteSample(/* timeUs= */ 0, C.BUFFER_FLAG_KEY_FRAME),
+                oneByteSample(/* timeUs= */ 50, C.BUFFER_FLAG_KEY_FRAME),
+                oneByteSample(/* timeUs= */ 100, C.BUFFER_FLAG_KEY_FRAME),
                 format(changedFormat),
-                oneByteSample(/* timeUs= */ 150),
-                oneByteSample(/* timeUs= */ 200),
-                oneByteSample(/* timeUs= */ 250),
+                oneByteSample(/* timeUs= */ 150, C.BUFFER_FLAG_KEY_FRAME),
+                oneByteSample(/* timeUs= */ 200, C.BUFFER_FLAG_KEY_FRAME),
+                oneByteSample(/* timeUs= */ 250, C.BUFFER_FLAG_KEY_FRAME),
                 END_OF_STREAM_ITEM));
 
     mediaCodecAudioRenderer.enable(
@@ -225,10 +228,12 @@ public class MediaCodecAudioRendererTest {
 
     FakeSampleStream fakeSampleStream =
         new FakeSampleStream(
+            /* mediaSourceEventDispatcher= */ null,
             DrmSessionManager.DUMMY,
-            /* eventDispatcher= */ null,
+            new DrmSessionEventListener.EventDispatcher(),
             /* initialFormat= */ AUDIO_AAC,
-            ImmutableList.of(oneByteSample(/* timeUs= */ 0), END_OF_STREAM_ITEM));
+            ImmutableList.of(
+                oneByteSample(/* timeUs= */ 0, C.BUFFER_FLAG_KEY_FRAME), END_OF_STREAM_ITEM));
 
     exceptionThrowingRenderer.enable(
         RendererConfiguration.DEFAULT,

@@ -13,21 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.android.exoplayer2.extractor.mp4;
+package com.google.android.exoplayer2.util;
 
-import static com.google.common.truth.Truth.assertThat;
+/**
+ * Represents an operation that accepts a single input argument and returns no result. Unlike most
+ * other functional interfaces, Consumer is expected to operate via side-effects.
+ */
+public interface Consumer<T> {
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-/** Test for {@link MetadataUtil}. */
-@RunWith(AndroidJUnit4.class)
-public final class MetadataUtilTest {
-
-  @Test
-  public void standardGenre_length_matchesNumberOfId3Genres() {
-    // Check that we haven't forgotten a genre in the list.
-    assertThat(MetadataUtil.STANDARD_GENRES).hasLength(192);
-  }
+  /** Performs this operation on the given argument. */
+  void accept(T t);
 }
