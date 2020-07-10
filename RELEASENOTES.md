@@ -231,8 +231,14 @@
         ([#7357](https://github.com/google/ExoPlayer/issues/7357)).
 *   Metadata: Add minimal DVB Application Information Table (AIT) support
     ([#6922](https://github.com/google/ExoPlayer/pull/6922)).
+*   Media2 extension: Publish media2 extension for integrating ExoPlayer with
+    `androidx.media2.common.SessionPlayer` and
+    `androidx.media2.session.MediaSession`.
 *   Cast extension: Implement playlist API and deprecate the old queue
     manipulation API.
+*   IMA extension: Upgrade to IMA SDK 3.19.4, bringing in a fix for setting the
+    media load timeout
+    ([#7170](https://github.com/google/ExoPlayer/issues/7170)).
 *   Demo app: Retain previous position in list of samples.
 *   Add Guava dependency.
 
