@@ -212,6 +212,9 @@
         headers mime type in `DefaultExtractorsFactory`.
     *   Add support for partially fragmented MP4s
         ([#7308](https://github.com/google/ExoPlayer/issues/7308)).
+    *   Add support for MPEG-4 Part 2 and H.263 in MPEG-TS
+        ([#1603](https://github.com/google/ExoPlayer/issues/1603),
+        [#5107](https://github.com/google/ExoPlayer/issues/5107)).
 *   Testing
     *   Add `TestExoPlayer`, a utility class with APIs to create
         `SimpleExoPlayer` instances with fake components for testing.
@@ -236,9 +239,13 @@
     `androidx.media2.session.MediaSession`.
 *   Cast extension: Implement playlist API and deprecate the old queue
     manipulation API.
-*   IMA extension: Upgrade to IMA SDK 3.19.4, bringing in a fix for setting the
-    media load timeout
-    ([#7170](https://github.com/google/ExoPlayer/issues/7170)).
+*   IMA extension:
+    *   Upgrade to IMA SDK 3.19.4, bringing in a fix for setting the
+        media load timeout
+        ([#7170](https://github.com/google/ExoPlayer/issues/7170)).
+    *   Migrate to new 'friendly obstruction' IMA SDK APIs, and allow apps to
+        register a purpose and detail reason for overlay views via
+        `AdsLoader.AdViewProvider`.
 *   Demo app: Retain previous position in list of samples.
 *   Add Guava dependency.
 
