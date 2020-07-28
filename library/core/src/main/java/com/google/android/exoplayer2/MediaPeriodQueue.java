@@ -811,11 +811,7 @@ import com.google.common.collect.ImmutableList;
             : endPositionUs;
     if (durationUs != C.TIME_UNSET && startPositionUs >= durationUs) {
       // Ensure start position doesn't exceed duration.
-<<<<<<< HEAD
-      startPositionUs = 0;//Math.max(0, durationUs - 1);
-=======
-      startPositionUs = max(0, durationUs - 1);
->>>>>>> 1ed5d8b5633f935d3c7f2cc52c1493616b7e0d32
+      startPositionUs = 0;//max(0, durationUs - 1);
     }
     return new MediaPeriodInfo(
         id,
