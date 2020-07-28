@@ -45,6 +45,7 @@ import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
 import com.google.android.exoplayer2.upstream.cache.NoOpCacheEvictor;
 import com.google.android.exoplayer2.upstream.cache.SimpleCache;
 import com.google.android.exoplayer2.util.ConditionVariable;
+import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.Util;
 import java.io.File;
 import java.io.IOException;
@@ -56,11 +57,9 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.robolectric.annotation.LooperMode;
 
 /** Unit tests for {@link DownloadService}. */
 @RunWith(AndroidJUnit4.class)
-@LooperMode(LooperMode.Mode.PAUSED)
 public class DownloadServiceDashTest {
 
   private SimpleCache cache;
@@ -79,7 +78,8 @@ public class DownloadServiceDashTest {
     testThread = new DummyMainThread();
     context = ApplicationProvider.getApplicationContext();
     tempFolder = Util.createTempDirectory(context, "ExoPlayerTest");
-    cache = new SimpleCache(tempFolder, new NoOpCacheEvictor());
+    cache =
+        new SimpleCache(tempFolder, new NoOpCacheEvictor(), TestUtil.getInMemoryDatabaseProvider());
 
     Runnable pauseAction =
         () -> {
@@ -117,7 +117,8 @@ public class DownloadServiceDashTest {
               new DefaultDownloaderFactory(
                   new CacheDataSource.Factory()
                       .setCache(cache)
-                      .setUpstreamDataSourceFactory(fakeDataSourceFactory));
+                      .setUpstreamDataSourceFactory(fakeDataSourceFactory),
+                  /* executor= */ Runnable::run);
           final DownloadManager dashDownloadManager =
               new DownloadManager(
                   ApplicationProvider.getApplicationContext(), downloadIndex, downloaderFactory);
@@ -207,9 +208,10 @@ public class DownloadServiceDashTest {
     DownloadRequest action =
         new DownloadRequest(
             TEST_ID,
-            DownloadRequest.TYPE_DASH,
             TEST_MPD_URI,
+            MimeTypes.APPLICATION_MPD,
             keysList,
+            /* keySetId= */ null,
             /* customCacheKey= */ null,
             null);
     testThread.runOnMainThread(

@@ -31,9 +31,10 @@
     *   Add `play` and `pause` methods to `Player`.
     *   Add `Player.getCurrentLiveOffset` to conveniently return the live
         offset.
-    *   Add `Player.onPlayWhenReadyChanged` with reasons.
-    *   Add `Player.onPlaybackStateChanged` and deprecate
-        `Player.onPlayerStateChanged`.
+    *   Add `Player.EventListener.onPlayWhenReadyChanged` with reasons.
+    *   Add `Player.EventListener.onPlaybackStateChanged` and deprecate
+        `Player.EventListener.onPlayerStateChanged`.
+    *   Add `Player.EventListener.onMediaItemTransition` with reasons.
     *   Add `Player.setAudioSessionId` to set the session ID attached to the
         `AudioTrack`.
     *   Deprecate and rename `getPlaybackError` to `getPlayerError` for
@@ -96,6 +97,10 @@
         ([#7590](https://github.com/google/ExoPlayer/issues/7590)).
     *   Remove `AdaptiveTrackSelection.minTimeBetweenBufferReevaluationMs`
         parameter ([#7582](https://github.com/google/ExoPlayer/issues/7582)).
+    *   Fix wrong `MediaPeriodId` for some renderer errors reported by
+        `AnalyticsListener.onPlayerError`.
+    *   Remove onMediaPeriodCreated/Released/ReadingStarted from
+        `MediaSourceEventListener` and `AnalyticsListener`.
 *   Video: Pass frame rate hint to `Surface.setFrameRate` on Android R devices.
 *   Track selection:
     *   Add `Player.getTrackSelector`.
@@ -199,6 +204,8 @@
 *   Ogg: Allow non-contiguous pages
     ([#7230](https://github.com/google/ExoPlayer/issues/7230)).
 *   Matroska: Remove support for "Invisible" block header flag.
+*   FLV: Ignore SCRIPTDATA segments with invalid name types, rather than failing
+    playback ([#7675](https://github.com/google/ExoPlayer/issues/7675)).
 *   Extractors:
     *   Add `IndexSeeker` for accurate seeks in VBR MP3 streams
         ([#6787](https://github.com/google/ExoPlayer/issues/6787)). This seeker
@@ -240,13 +247,20 @@
 *   Cast extension: Implement playlist API and deprecate the old queue
     manipulation API.
 *   IMA extension:
-    *   Upgrade to IMA SDK 3.19.4, bringing in a fix for setting the
-        media load timeout
-        ([#7170](https://github.com/google/ExoPlayer/issues/7170)).
+    *   Upgrade to IMA SDK 3.19.4, bringing in a fix for setting the media load
+        timeout ([#7170](https://github.com/google/ExoPlayer/issues/7170)).
     *   Migrate to new 'friendly obstruction' IMA SDK APIs, and allow apps to
         register a purpose and detail reason for overlay views via
         `AdsLoader.AdViewProvider`.
-*   Demo app: Retain previous position in list of samples.
+    *   Add `ImaAdsLoader.Builder.setCompanionAdSlots` so it's possible to set
+        companion ad slots without accessing the `AdDisplayContainer`.
+*   Demo app:
+    *   Retain previous position in list of samples.
+    *   Replace the `extensions` variant with `decoderExtensions` and make the
+        demo app use the Cronet and IMA extensions by default.
+    *   Removed support for media tunneling
+    *   Removed support for random ABR (random track selection)
+    *   Removed support for playing back in spherical stereo mode
 *   Add Guava dependency.
 
 ### 2.11.7 (2020-06-29) ###

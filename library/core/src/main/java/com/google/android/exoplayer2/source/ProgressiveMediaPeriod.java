@@ -15,6 +15,9 @@
  */
 package com.google.android.exoplayer2.source;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 import android.net.Uri;
 import android.os.Handler;
 import androidx.annotation.Nullable;
@@ -130,7 +133,6 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
   private boolean seenFirstTrackSelection;
   private boolean notifyDiscontinuity;
-  private boolean notifiedReadingStarted;
   private int enabledTrackCount;
   private long length;
 
@@ -205,7 +207,6 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
     length = C.LENGTH_UNSET;
     durationUs = C.TIME_UNSET;
     dataType = C.DATA_TYPE_MEDIA;
-    mediaSourceEventDispatcher.mediaPeriodCreated();
   }
 
   public void release() {
@@ -220,7 +221,6 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
     handler.removeCallbacksAndMessages(null);
     callback = null;
     released = true;
-    mediaSourceEventDispatcher.mediaPeriodReleased();
   }
 
   @Override
@@ -374,10 +374,6 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
   @Override
   public long readDiscontinuity() {
-    if (!notifiedReadingStarted) {
-      mediaSourceEventDispatcher.readingStarted();
-      notifiedReadingStarted = true;
-    }
     if (notifyDiscontinuity
         && (loadingFinished || getExtractedSamplesCount() > extractedSamplesCountAtStartOfLoad)) {
       notifyDiscontinuity = false;
@@ -401,8 +397,8 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
       int trackCount = sampleQueues.length;
       for (int i = 0; i < trackCount; i++) {
         if (trackIsAudioVideoFlags[i] && !sampleQueues[i].isLastSampleQueued()) {
-          largestQueuedTimestampUs = Math.min(largestQueuedTimestampUs,
-              sampleQueues[i].getLargestQueuedTimestampUs());
+          largestQueuedTimestampUs =
+              min(largestQueuedTimestampUs, sampleQueues[i].getLargestQueuedTimestampUs());
         }
       }
     }
@@ -787,7 +783,8 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
       if (trackFormat.drmInitData != null) {
         trackFormat =
             trackFormat.copyWithExoMediaCryptoType(
-                drmSessionManager.getExoMediaCryptoType(trackFormat.drmInitData));
+                drmSessionManager.getExoMediaCryptoType(
+                    trackFormat.drmInitData, MimeTypes.getTrackType(trackFormat.sampleMimeType)));
       }
       trackArray[i] = new TrackGroup(trackFormat);
     }
@@ -915,8 +912,8 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
   private long getLargestQueuedTimestampUs() {
     long largestQueuedTimestampUs = Long.MIN_VALUE;
     for (SampleQueue sampleQueue : sampleQueues) {
-      largestQueuedTimestampUs = Math.max(largestQueuedTimestampUs,
-          sampleQueue.getLargestQueuedTimestampUs());
+      largestQueuedTimestampUs =
+          max(largestQueuedTimestampUs, sampleQueue.getLargestQueuedTimestampUs());
     }
     return largestQueuedTimestampUs;
   }
@@ -1074,8 +1071,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
     public void onIcyMetadata(ParsableByteArray metadata) {
       // Always output the first ICY metadata at the start time. This helps minimize any delay
       // between the start of playback and the first ICY metadata event.
-      long timeUs =
-          !seenIcyMetadata ? seekTimeUs : Math.max(getLargestQueuedTimestampUs(), seekTimeUs);
+      long timeUs = !seenIcyMetadata ? seekTimeUs : max(getLargestQueuedTimestampUs(), seekTimeUs);
       int length = metadata.bytesLeft();
       TrackOutput icyTrackOutput = Assertions.checkNotNull(this.icyTrackOutput);
       icyTrackOutput.sampleData(metadata, length);

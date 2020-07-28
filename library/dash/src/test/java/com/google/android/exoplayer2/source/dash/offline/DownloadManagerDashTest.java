@@ -21,6 +21,7 @@ import static com.google.android.exoplayer2.source.dash.offline.DashDownloadTest
 import static com.google.android.exoplayer2.testutil.CacheAsserts.assertCacheEmpty;
 import static com.google.android.exoplayer2.testutil.CacheAsserts.assertCachedData;
 import static com.google.common.truth.Truth.assertThat;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import android.content.Context;
 import androidx.test.core.app.ApplicationProvider;
@@ -42,24 +43,22 @@ import com.google.android.exoplayer2.upstream.DataSource.Factory;
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
 import com.google.android.exoplayer2.upstream.cache.NoOpCacheEvictor;
 import com.google.android.exoplayer2.upstream.cache.SimpleCache;
+import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.Util;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.MockitoAnnotations;
-import org.robolectric.annotation.LooperMode;
 import org.robolectric.shadows.ShadowLog;
 
 /** Tests {@link DownloadManager}. */
 @RunWith(AndroidJUnit4.class)
-@LooperMode(LooperMode.Mode.PAUSED)
 public class DownloadManagerDashTest {
 
   private static final int ASSERT_TRUE_TIMEOUT_MS = 5000;
@@ -82,7 +81,9 @@ public class DownloadManagerDashTest {
     tempFolder = Util.createTempDirectory(context, "ExoPlayerTest");
     File cacheFolder = new File(tempFolder, "cache");
     cacheFolder.mkdir();
-    cache = new SimpleCache(cacheFolder, new NoOpCacheEvictor());
+    cache =
+        new SimpleCache(
+            cacheFolder, new NoOpCacheEvictor(), TestUtil.getInMemoryDatabaseProvider());
     MockitoAnnotations.initMocks(this);
     fakeDataSet =
         new FakeDataSet()
@@ -204,8 +205,7 @@ public class DownloadManagerDashTest {
         .appendReadData(TestUtil.buildTestData(5))
         .endData();
     handleDownloadRequest(fakeStreamKey1);
-    assertThat(downloadInProgressLatch.await(ASSERT_TRUE_TIMEOUT_MS, TimeUnit.MILLISECONDS))
-        .isTrue();
+    assertThat(downloadInProgressLatch.await(ASSERT_TRUE_TIMEOUT_MS, MILLISECONDS)).isTrue();
 
     handleRemoveAction();
     downloadManagerListener.blockUntilIdleAndThrowAnyFailure();
@@ -222,9 +222,10 @@ public class DownloadManagerDashTest {
     Collections.addAll(keysList, keys);
     return new DownloadRequest(
         TEST_ID,
-        DownloadRequest.TYPE_DASH,
         TEST_MPD_URI,
+        MimeTypes.APPLICATION_MPD,
         keysList,
+        /* keySetId= */ null,
         /* customCacheKey= */ null,
         null);
   }
@@ -241,7 +242,8 @@ public class DownloadManagerDashTest {
               new DefaultDownloaderFactory(
                   new CacheDataSource.Factory()
                       .setCache(cache)
-                      .setUpstreamDataSourceFactory(fakeDataSourceFactory));
+                      .setUpstreamDataSourceFactory(fakeDataSourceFactory),
+                  /* executor= */ Runnable::run);
           downloadManager =
               new DownloadManager(
                   ApplicationProvider.getApplicationContext(), downloadIndex, downloaderFactory);

@@ -79,8 +79,6 @@ public class SampleChooserActivity extends AppCompatActivity
   private DownloadTracker downloadTracker;
   private SampleAdapter sampleAdapter;
   private MenuItem preferExtensionDecodersMenuItem;
-  private MenuItem randomAbrMenuItem;
-  private MenuItem tunnelingMenuItem;
   private ExpandableListView sampleListView;
 
   @Override
@@ -115,9 +113,8 @@ public class SampleChooserActivity extends AppCompatActivity
       Arrays.sort(uris);
     }
 
-    DemoApplication application = (DemoApplication) getApplication();
-    useExtensionRenderers = application.useExtensionRenderers();
-    downloadTracker = application.getDownloadTracker();
+    useExtensionRenderers = DemoUtil.useExtensionRenderers();
+    downloadTracker = DemoUtil.getDownloadTracker(/* context= */ this);
     loadSample();
 
     // Start the download service if it should be running but it's not currently.
@@ -137,11 +134,6 @@ public class SampleChooserActivity extends AppCompatActivity
     inflater.inflate(R.menu.sample_chooser_menu, menu);
     preferExtensionDecodersMenuItem = menu.findItem(R.id.prefer_extension_decoders);
     preferExtensionDecodersMenuItem.setVisible(useExtensionRenderers);
-    randomAbrMenuItem = menu.findItem(R.id.random_abr);
-    tunnelingMenuItem = menu.findItem(R.id.tunneling);
-    if (Util.SDK_INT < 21) {
-      tunnelingMenuItem.setEnabled(false);
-    }
     return true;
   }
 
@@ -235,12 +227,6 @@ public class SampleChooserActivity extends AppCompatActivity
     intent.putExtra(
         IntentUtil.PREFER_EXTENSION_DECODERS_EXTRA,
         isNonNullAndChecked(preferExtensionDecodersMenuItem));
-    String abrAlgorithm =
-        isNonNullAndChecked(randomAbrMenuItem)
-            ? IntentUtil.ABR_ALGORITHM_RANDOM
-            : IntentUtil.ABR_ALGORITHM_DEFAULT;
-    intent.putExtra(IntentUtil.ABR_ALGORITHM_EXTRA, abrAlgorithm);
-    intent.putExtra(IntentUtil.TUNNELING_EXTRA, isNonNullAndChecked(tunnelingMenuItem));
     IntentUtil.addToIntent(playlistHolder.mediaItems, intent);
     startActivity(intent);
     return true;
@@ -253,8 +239,8 @@ public class SampleChooserActivity extends AppCompatActivity
           .show();
     } else {
       RenderersFactory renderersFactory =
-          ((DemoApplication) getApplication())
-              .buildRenderersFactory(isNonNullAndChecked(preferExtensionDecodersMenuItem));
+          DemoUtil.buildRenderersFactory(
+              /* context= */ this, isNonNullAndChecked(preferExtensionDecodersMenuItem));
       downloadTracker.toggleDownload(
           getSupportFragmentManager(), playlistHolder.mediaItems.get(0), renderersFactory);
     }
@@ -364,7 +350,6 @@ public class SampleChooserActivity extends AppCompatActivity
       String extension = null;
       String title = null;
       boolean isLive = false;
-      String sphericalStereoMode = null;
       ArrayList<PlaylistHolder> children = null;
       Uri subtitleUri = null;
       String subtitleMimeType = null;
@@ -429,11 +414,6 @@ public class SampleChooserActivity extends AppCompatActivity
           case "ad_tag_uri":
             mediaItem.setAdTagUri(reader.nextString());
             break;
-          case "spherical_stereo_mode":
-            Assertions.checkState(
-                !insidePlaylist, "Invalid attribute on nested item: spherical_stereo_mode");
-            sphericalStereoMode = reader.nextString();
-            break;
           case "subtitle_uri":
             subtitleUri = Uri.parse(reader.nextString());
             break;
@@ -460,7 +440,7 @@ public class SampleChooserActivity extends AppCompatActivity
             .setUri(uri)
             .setMediaMetadata(new MediaMetadata.Builder().setTitle(title).build())
             .setMimeType(IntentUtil.inferAdaptiveStreamMimeType(uri, extension))
-            .setTag(new IntentUtil.Tag(isLive, sphericalStereoMode));
+            .setTag(new IntentUtil.Tag(isLive));
         if (subtitleUri != null) {
           MediaItem.Subtitle subtitle =
               new MediaItem.Subtitle(

@@ -17,6 +17,8 @@ package com.google.android.exoplayer2.util;
 
 import static android.content.Context.UI_MODE_SERVICE;
 import static com.google.android.exoplayer2.util.Assertions.checkNotNull;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 
 import android.Manifest.permission;
 import android.annotation.SuppressLint;
@@ -30,6 +32,8 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.database.DatabaseUtils;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Point;
 import android.media.AudioFormat;
 import android.net.ConnectivityManager;
@@ -585,7 +589,7 @@ public final class Util {
       mainLanguage = replacedLanguage;
     }
     if ("no".equals(mainLanguage) || "i".equals(mainLanguage) || "zh".equals(mainLanguage)) {
-      normalizedTag = maybeReplaceGrandfatheredLanguageTags(normalizedTag);
+      normalizedTag = maybeReplaceLegacyLanguageTags(normalizedTag);
     }
     return normalizedTag;
   }
@@ -719,7 +723,7 @@ public final class Util {
    * @return The constrained value {@code Math.max(min, Math.min(value, max))}.
    */
   public static int constrainValue(int value, int min, int max) {
-    return Math.max(min, Math.min(value, max));
+    return max(min, min(value, max));
   }
 
   /**
@@ -731,7 +735,7 @@ public final class Util {
    * @return The constrained value {@code Math.max(min, Math.min(value, max))}.
    */
   public static long constrainValue(long value, long min, long max) {
-    return Math.max(min, Math.min(value, max));
+    return max(min, min(value, max));
   }
 
   /**
@@ -743,7 +747,7 @@ public final class Util {
    * @return The constrained value {@code Math.max(min, Math.min(value, max))}.
    */
   public static float constrainValue(float value, float min, float max) {
-    return Math.max(min, Math.min(value, max));
+    return max(min, min(value, max));
   }
 
   /**
@@ -845,7 +849,7 @@ public final class Util {
         index++;
       }
     }
-    return stayInBounds ? Math.max(0, index) : index;
+    return stayInBounds ? max(0, index) : index;
   }
 
   /**
@@ -877,7 +881,7 @@ public final class Util {
         index++;
       }
     }
-    return stayInBounds ? Math.max(0, index) : index;
+    return stayInBounds ? max(0, index) : index;
   }
 
   /**
@@ -913,7 +917,7 @@ public final class Util {
         index++;
       }
     }
-    return stayInBounds ? Math.max(0, index) : index;
+    return stayInBounds ? max(0, index) : index;
   }
 
   /**
@@ -987,7 +991,7 @@ public final class Util {
         index--;
       }
     }
-    return stayInBounds ? Math.min(array.length - 1, index) : index;
+    return stayInBounds ? min(array.length - 1, index) : index;
   }
 
   /**
@@ -1020,7 +1024,7 @@ public final class Util {
         index--;
       }
     }
-    return stayInBounds ? Math.min(array.length - 1, index) : index;
+    return stayInBounds ? min(array.length - 1, index) : index;
   }
 
   /**
@@ -1058,7 +1062,7 @@ public final class Util {
         index--;
       }
     }
-    return stayInBounds ? Math.min(list.size() - 1, index) : index;
+    return stayInBounds ? min(list.size() - 1, index) : index;
   }
 
   /**
@@ -1444,7 +1448,7 @@ public final class Util {
         .setSampleMimeType(MimeTypes.AUDIO_RAW)
         .setChannelCount(channels)
         .setSampleRate(sampleRate)
-        .setEncoding(pcmEncoding)
+        .setPcmEncoding(pcmEncoding)
         .build();
   }
 
@@ -1501,7 +1505,7 @@ public final class Util {
 
   /**
    * Returns the audio track channel configuration for the given channel count, or {@link
-   * AudioFormat#CHANNEL_INVALID} if output is not poossible.
+   * AudioFormat#CHANNEL_INVALID} if output is not possible.
    *
    * @param channelCount The number of channels in the input audio.
    * @return The channel configuration or {@link AudioFormat#CHANNEL_INVALID} if output is not
@@ -1736,7 +1740,7 @@ public final class Util {
       case MimeTypes.APPLICATION_SS:
         return C.TYPE_SS;
       default:
-        return Util.inferContentType(uri);
+        return C.TYPE_OTHER;
     }
   }
 
@@ -2044,14 +2048,14 @@ public final class Util {
     if (input.bytesLeft() <= 0) {
       return false;
     }
-    byte[] outputData = output.data;
+    byte[] outputData = output.getData();
     if (outputData.length < input.bytesLeft()) {
       outputData = new byte[2 * input.bytesLeft()];
     }
     if (inflater == null) {
       inflater = new Inflater();
     }
-    inflater.setInput(input.data, input.getPosition(), input.bytesLeft());
+    inflater.setInput(input.getData(), input.getPosition(), input.bytesLeft());
     try {
       int outputSize = 0;
       while (true) {
@@ -2224,7 +2228,15 @@ public final class Util {
     for (int i = removedItemsLength - 1; i >= 0; i--) {
       removedItems.addFirst(items.remove(fromIndex + i));
     }
-    items.addAll(Math.min(newFromIndex, items.size()), removedItems);
+    items.addAll(min(newFromIndex, items.size()), removedItems);
+  }
+
+  /** Returns whether the table exists in the database. */
+  public static boolean tableExists(SQLiteDatabase database, String tableName) {
+    long count =
+        DatabaseUtils.queryNumEntries(
+            database, "sqlite_master", "tbl_name = ?", new String[] {tableName});
+    return count > 0;
   }
 
   @Nullable
@@ -2347,11 +2359,11 @@ public final class Util {
             .isCleartextTrafficPermitted(checkNotNull(uri.getHost()));
   }
 
-  private static String maybeReplaceGrandfatheredLanguageTags(String languageTag) {
-    for (int i = 0; i < isoGrandfatheredTagReplacements.length; i += 2) {
-      if (languageTag.startsWith(isoGrandfatheredTagReplacements[i])) {
-        return isoGrandfatheredTagReplacements[i + 1]
-            + languageTag.substring(/* beginIndex= */ isoGrandfatheredTagReplacements[i].length());
+  private static String maybeReplaceLegacyLanguageTags(String languageTag) {
+    for (int i = 0; i < isoLegacyTagReplacements.length; i += 2) {
+      if (languageTag.startsWith(isoLegacyTagReplacements[i])) {
+        return isoLegacyTagReplacements[i + 1]
+            + languageTag.substring(/* beginIndex= */ isoLegacyTagReplacements[i].length());
       }
     }
     return languageTag;
@@ -2411,9 +2423,9 @@ public final class Util {
         "hsn", "zh-hsn"
       };
 
-  // "Grandfathered tags", replaced by modern equivalents (including macrolanguage)
+  // Legacy ("grandfathered") tags, replaced by modern equivalents (including macrolanguage)
   // See https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry.
-  private static final String[] isoGrandfatheredTagReplacements =
+  private static final String[] isoLegacyTagReplacements =
       new String[] {
         "i-lux", "lb",
         "i-hak", "zh-hak",

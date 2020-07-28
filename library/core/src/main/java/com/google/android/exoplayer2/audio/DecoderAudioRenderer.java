@@ -15,9 +15,12 @@
  */
 package com.google.android.exoplayer2.audio;
 
+import static java.lang.Math.max;
+
 import android.media.audiofx.Virtualizer;
 import android.os.Handler;
 import android.os.SystemClock;
+import androidx.annotation.CallSuper;
 import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.BaseRenderer;
@@ -254,7 +257,11 @@ public abstract class DecoderAudioRenderer extends BaseRenderer implements Media
         // End of stream read having not read a format.
         Assertions.checkState(flagsOnlyBuffer.isEndOfStream());
         inputStreamEnded = true;
-        processEndOfStream();
+        try {
+          processEndOfStream();
+        } catch (AudioSink.WriteException e) {
+          throw createRendererException(e, /* format= */ null);
+        }
         return;
       } else {
         // We still don't have a format and can't make progress without one.
@@ -295,19 +302,10 @@ public abstract class DecoderAudioRenderer extends BaseRenderer implements Media
   }
 
   /** See {@link AudioSink.Listener#onPositionDiscontinuity()}. */
-  protected void onAudioTrackPositionDiscontinuity() {
-    // Do nothing.
-  }
-
-  /** See {@link AudioSink.Listener#onUnderrun(int, long, long)}. */
-  protected void onAudioTrackUnderrun(
-      int bufferSize, long bufferSizeMs, long elapsedSinceLastFeedMs) {
-    // Do nothing.
-  }
-
-  /** See {@link AudioSink.Listener#onSkipSilenceEnabledChanged(boolean)}. */
-  protected void onAudioTrackSkipSilenceEnabledChanged(boolean skipSilenceEnabled) {
-    // Do nothing.
+  @CallSuper
+  protected void onPositionDiscontinuity() {
+    // We are out of sync so allow currentPositionUs to jump backwards.
+    allowPositionDiscontinuity = true;
   }
 
   /**
@@ -364,7 +362,11 @@ public abstract class DecoderAudioRenderer extends BaseRenderer implements Media
       } else {
         outputBuffer.release();
         outputBuffer = null;
-        processEndOfStream();
+        try {
+          processEndOfStream();
+        } catch (AudioSink.WriteException e) {
+          throw createRendererException(e, getOutputFormat());
+        }
       }
       return false;
     }
@@ -439,14 +441,9 @@ public abstract class DecoderAudioRenderer extends BaseRenderer implements Media
     }
   }
 
-  private void processEndOfStream() throws ExoPlaybackException {
+  private void processEndOfStream() throws AudioSink.WriteException {
     outputStreamEnded = true;
-    try {
-      audioSink.playToEndOfStream();
-    } catch (AudioSink.WriteException e) {
-      // TODO(internal: b/145658993) Use outputFormat for the call from drainOutputBuffer.
-      throw createRendererException(e, inputFormat);
-    }
+    audioSink.playToEndOfStream();
   }
 
   private void flushDecoder() throws ExoPlaybackException {
@@ -671,7 +668,7 @@ public abstract class DecoderAudioRenderer extends BaseRenderer implements Media
       currentPositionUs =
           allowPositionDiscontinuity
               ? newCurrentPositionUs
-              : Math.max(currentPositionUs, newCurrentPositionUs);
+              : max(currentPositionUs, newCurrentPositionUs);
       allowPositionDiscontinuity = false;
     }
   }
@@ -686,21 +683,17 @@ public abstract class DecoderAudioRenderer extends BaseRenderer implements Media
 
     @Override
     public void onPositionDiscontinuity() {
-      onAudioTrackPositionDiscontinuity();
-      // We are out of sync so allow currentPositionUs to jump backwards.
-      DecoderAudioRenderer.this.allowPositionDiscontinuity = true;
+      DecoderAudioRenderer.this.onPositionDiscontinuity();
     }
 
     @Override
     public void onUnderrun(int bufferSize, long bufferSizeMs, long elapsedSinceLastFeedMs) {
-      eventDispatcher.audioTrackUnderrun(bufferSize, bufferSizeMs, elapsedSinceLastFeedMs);
-      onAudioTrackUnderrun(bufferSize, bufferSizeMs, elapsedSinceLastFeedMs);
+      eventDispatcher.underrun(bufferSize, bufferSizeMs, elapsedSinceLastFeedMs);
     }
 
     @Override
     public void onSkipSilenceEnabledChanged(boolean skipSilenceEnabled) {
       eventDispatcher.skipSilenceEnabledChanged(skipSilenceEnabled);
-      onAudioTrackSkipSilenceEnabledChanged(skipSilenceEnabled);
     }
   }
 }

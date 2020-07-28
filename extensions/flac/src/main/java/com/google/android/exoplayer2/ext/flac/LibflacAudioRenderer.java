@@ -45,6 +45,8 @@ public final class LibflacAudioRenderer extends DecoderAudioRenderer {
   }
 
   /**
+   * Creates an instance.
+   *
    * @param eventHandler A handler to use when delivering events to {@code eventListener}. May be
    *     null if delivery of events is not required.
    * @param eventListener A listener of events. May be null if delivery of events is not required.
@@ -58,6 +60,8 @@ public final class LibflacAudioRenderer extends DecoderAudioRenderer {
   }
 
   /**
+   * Creates an instance.
+   *
    * @param eventHandler A handler to use when delivering events to {@code eventListener}. May be
    *     null if delivery of events is not required.
    * @param eventListener A listener of events. May be null if delivery of events is not required.
@@ -103,7 +107,7 @@ public final class LibflacAudioRenderer extends DecoderAudioRenderer {
     }
     if (!sinkSupportsFormat(outputFormat)) {
       return FORMAT_UNSUPPORTED_SUBTYPE;
-    } else if (format.drmInitData != null && format.exoMediaCryptoType == null) {
+    } else if (format.exoMediaCryptoType != null) {
       return FORMAT_UNSUPPORTED_DRM;
     } else {
       return FORMAT_HANDLED;

@@ -15,6 +15,8 @@
  */
 package com.google.android.exoplayer2.source.dash;
 
+import static java.lang.Math.min;
+
 import android.util.Pair;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
@@ -102,7 +104,6 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
   private DashManifest manifest;
   private int periodIndex;
   private List<EventStream> eventStreams;
-  private boolean notifiedReadingStarted;
 
   public DashMediaPeriod(
       int id,
@@ -144,7 +145,6 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
         buildTrackGroups(drmSessionManager, period.adaptationSets, eventStreams);
     trackGroups = result.first;
     trackGroupInfos = result.second;
-    mediaSourceEventDispatcher.mediaPeriodCreated();
   }
 
   /**
@@ -183,7 +183,6 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
       sampleStream.release(this);
     }
     callback = null;
-    mediaSourceEventDispatcher.mediaPeriodReleased();
   }
 
   // ChunkSampleStream.ReleaseCallback implementation.
@@ -320,10 +319,6 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
 
   @Override
   public long readDiscontinuity() {
-    if (!notifiedReadingStarted) {
-      mediaSourceEventDispatcher.readingStarted();
-      notifiedReadingStarted = true;
-    }
     return C.TIME_UNSET;
   }
 
@@ -592,7 +587,7 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
                 adaptationSetIdToIndex.get(
                     Integer.parseInt(adaptationSetId), /* valueIfKeyNotFound= */ -1);
             if (otherAdaptationSetId != -1) {
-              mergedGroupIndex = Math.min(mergedGroupIndex, otherAdaptationSetId);
+              mergedGroupIndex = min(mergedGroupIndex, otherAdaptationSetId);
             }
           }
         }
@@ -674,7 +669,8 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
         if (drmInitData != null) {
           format =
               format.copyWithExoMediaCryptoType(
-                  drmSessionManager.getExoMediaCryptoType(drmInitData));
+                  drmSessionManager.getExoMediaCryptoType(
+                      drmInitData, MimeTypes.getTrackType(format.sampleMimeType)));
         }
         formats[j] = format;
       }
@@ -895,7 +891,7 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
   }
 
   // We won't assign the array to a variable that erases the generic type, and then write into it.
-  @SuppressWarnings({"unchecked"})
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private static ChunkSampleStream<DashChunkSource>[] newSampleStreamArray(int length) {
     return new ChunkSampleStream[length];
   }

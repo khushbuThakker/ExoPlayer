@@ -41,13 +41,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.robolectric.annotation.LooperMode;
-import org.robolectric.annotation.LooperMode.Mode;
 import org.robolectric.shadows.ShadowLog;
 
 /** Tests {@link DownloadManager}. */
 @RunWith(AndroidJUnit4.class)
-@LooperMode(Mode.PAUSED)
 public class DownloadManagerTest {
 
   /** Timeout to use when blocking on conditions that we expect to become unblocked. */
@@ -790,9 +787,10 @@ public class DownloadManagerTest {
   private static DownloadRequest createDownloadRequest(String id, StreamKey... keys) {
     return new DownloadRequest(
         id,
-        DownloadRequest.TYPE_DASH,
         Uri.parse("http://abc.com/ " + id),
+        /* mimeType= */ null,
         Arrays.asList(keys),
+        /* keySetId= */ null,
         /* customCacheKey= */ null,
         /* data= */ null);
   }
@@ -911,7 +909,7 @@ public class DownloadManagerTest {
     }
 
     public void assertStreamKeys(StreamKey... streamKeys) {
-      assertThat(request.streamKeys).containsExactly(streamKeys);
+      assertThat(request.streamKeys).containsExactlyElementsIn(streamKeys);
     }
 
     public void assertDownloadStarted() throws InterruptedException {

@@ -27,6 +27,7 @@ import com.google.android.exoplayer2.offline.StreamKey;
 import com.google.android.exoplayer2.upstream.DummyDataSource;
 import com.google.android.exoplayer2.upstream.cache.Cache;
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
+import com.google.android.exoplayer2.util.MimeTypes;
 import java.util.Collections;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,15 +43,17 @@ public final class SsDownloaderTest {
         new CacheDataSource.Factory()
             .setCache(Mockito.mock(Cache.class))
             .setUpstreamDataSourceFactory(DummyDataSource.FACTORY);
-    DownloaderFactory factory = new DefaultDownloaderFactory(cacheDataSourceFactory);
+    DownloaderFactory factory =
+        new DefaultDownloaderFactory(cacheDataSourceFactory, /* executor= */ Runnable::run);
 
     Downloader downloader =
         factory.createDownloader(
             new DownloadRequest(
                 "id",
-                DownloadRequest.TYPE_SS,
                 Uri.parse("https://www.test.com/download"),
+                MimeTypes.APPLICATION_SS,
                 Collections.singletonList(new StreamKey(/* groupIndex= */ 0, /* trackIndex= */ 0)),
+                /* keySetId= */ null,
                 /* customCacheKey= */ null,
                 /* data= */ null));
     assertThat(downloader).isInstanceOf(SsDownloader.class);

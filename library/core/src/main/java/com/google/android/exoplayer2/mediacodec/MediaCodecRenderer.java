@@ -15,6 +15,8 @@
  */
 package com.google.android.exoplayer2.mediacodec;
 
+import static java.lang.Math.max;
+
 import android.annotation.TargetApi;
 import android.media.MediaCodec;
 import android.media.MediaCodec.CodecException;
@@ -359,7 +361,6 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
   @Nullable private DrmSession sourceDrmSession;
   @Nullable private MediaCrypto mediaCrypto;
   private boolean mediaCryptoRequiresSecureDecoder;
-  private long renderTimeLimitMs;
   private float operatingRate;
   @Nullable private MediaCodec codec;
   @Nullable private MediaCodecAdapter codecAdapter;
@@ -385,7 +386,7 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
   private long codecHotswapDeadlineMs;
   private int inputIndex;
   private int outputIndex;
-  private ByteBuffer outputBuffer;
+  @Nullable private ByteBuffer outputBuffer;
   private boolean isDecodeOnlyOutputBuffer;
   private boolean isLastOutputBuffer;
   private boolean bypassEnabled;
@@ -436,27 +437,12 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
     decodeOnlyPresentationTimestamps = new ArrayList<>();
     outputBufferInfo = new MediaCodec.BufferInfo();
     operatingRate = 1f;
-    renderTimeLimitMs = C.TIME_UNSET;
     mediaCodecOperationMode = OPERATION_MODE_SYNCHRONOUS;
     pendingOutputStreamOffsetsUs = new long[MAX_PENDING_OUTPUT_STREAM_OFFSET_COUNT];
     pendingOutputStreamSwitchTimesUs = new long[MAX_PENDING_OUTPUT_STREAM_OFFSET_COUNT];
     outputStreamOffsetUs = C.TIME_UNSET;
     bypassBatchBuffer = new BatchBuffer();
     resetCodecStateForRelease();
-  }
-
-  /**
-   * Set a limit on the time a single {@link #render(long, long)} call can spend draining and
-   * filling the decoder.
-   *
-   * <p>This method is experimental, and will be renamed or removed in a future release. It should
-   * only be called before the renderer is used.
-   *
-   * @param renderTimeLimitMs The render time limit in milliseconds, or {@link C#TIME_UNSET} for no
-   *     limit.
-   */
-  public void experimental_setRenderTimeLimitMs(long renderTimeLimitMs) {
-    this.renderTimeLimitMs = renderTimeLimitMs;
   }
 
   /**
@@ -818,11 +804,9 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
         while (bypassRender(positionUs, elapsedRealtimeUs)) {}
         TraceUtil.endSection();
       } else if (codec != null) {
-        long renderStartTimeMs = SystemClock.elapsedRealtime();
         TraceUtil.beginSection("drainAndFeed");
-        while (drainOutputBuffer(positionUs, elapsedRealtimeUs)
-            && shouldContinueRendering(renderStartTimeMs)) {}
-        while (feedInputBuffer() && shouldContinueRendering(renderStartTimeMs)) {}
+        while (drainOutputBuffer(positionUs, elapsedRealtimeUs)) {}
+        while (feedInputBuffer()) {}
         TraceUtil.endSection();
       } else {
         decoderCounters.skippedInputBufferCount += skipSource(positionUs);
@@ -1151,11 +1135,6 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
     onCodecInitialized(codecName, codecInitializedTimestamp, elapsed);
   }
 
-  private boolean shouldContinueRendering(long renderStartTimeMs) {
-    return renderTimeLimitMs == C.TIME_UNSET
-        || SystemClock.elapsedRealtime() - renderStartTimeMs < renderTimeLimitMs;
-  }
-
   private void getCodecBuffers(MediaCodec codec) {
     if (Util.SDK_INT < 21) {
       inputBuffers = codec.getInputBuffers();
@@ -1178,6 +1157,7 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
     }
   }
 
+  @Nullable
   private ByteBuffer getOutputBuffer(int outputIndex) {
     if (Util.SDK_INT >= 21) {
       return codec.getOutputBuffer(outputIndex);
@@ -1363,10 +1343,9 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
     // TODO(b/158483277): Find the root cause of why a gap is introduced in MP3 playback when using
     // presentationTimeUs from the c2Mp3TimestampTracker.
     if (c2Mp3TimestampTracker != null) {
-      largestQueuedPresentationTimeUs = Math.max(largestQueuedPresentationTimeUs, buffer.timeUs);
+      largestQueuedPresentationTimeUs = max(largestQueuedPresentationTimeUs, buffer.timeUs);
     } else {
-      largestQueuedPresentationTimeUs =
-          Math.max(largestQueuedPresentationTimeUs, presentationTimeUs);
+      largestQueuedPresentationTimeUs = max(largestQueuedPresentationTimeUs, presentationTimeUs);
     }
     buffer.flip();
     if (buffer.hasSupplementalData()) {
@@ -1654,7 +1633,7 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
       // No change.
     } else if (newCodecOperatingRate == CODEC_OPERATING_RATE_UNSET) {
       // The only way to clear the operating rate is to instantiate a new codec instance. See
-      // [Internal ref: b/71987865].
+      // [Internal ref: b/111543954].
       drainAndReinitializeCodec();
     } else if (codecOperatingRate != CODEC_OPERATING_RATE_UNSET
         || newCodecOperatingRate > assumedMinimumCodecOperatingRate) {
@@ -1877,7 +1856,10 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
    * @param elapsedRealtimeUs {@link SystemClock#elapsedRealtime()} in microseconds, measured at the
    *     start of the current iteration of the rendering loop.
    * @param codec The {@link MediaCodec} instance, or null in bypass mode were no codec is used.
-   * @param buffer The output buffer to process.
+   * @param buffer The output buffer to process, or null if the buffer data is not made available to
+   *     the application layer (see {@link MediaCodec#getOutputBuffer(int)}). This {@code buffer}
+   *     can only be null for video data. Note that the buffer data can still be rendered in this
+   *     case by using the {@code bufferIndex}.
    * @param bufferIndex The index of the output buffer.
    * @param bufferFlags The flags attached to the output buffer.
    * @param sampleCount The number of samples extracted from the sample queue in the buffer. This
@@ -1894,7 +1876,7 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
       long positionUs,
       long elapsedRealtimeUs,
       @Nullable MediaCodec codec,
-      ByteBuffer buffer,
+      @Nullable ByteBuffer buffer,
       int bufferIndex,
       int bufferFlags,
       int sampleCount,
@@ -1964,7 +1946,7 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
 
   /** Returns whether this renderer supports the given {@link Format Format's} DRM scheme. */
   protected static boolean supportsFormatDrm(Format format) {
-    return format.drmInitData == null
+    return format.exoMediaCryptoType == null
         || FrameworkMediaCrypto.class.equals(format.exoMediaCryptoType);
   }
 

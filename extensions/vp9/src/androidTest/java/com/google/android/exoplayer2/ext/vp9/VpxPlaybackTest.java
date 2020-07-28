@@ -24,10 +24,11 @@ import android.os.Looper;
 import androidx.annotation.Nullable;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.Renderer;
 import com.google.android.exoplayer2.extractor.mkv.MatroskaExtractor;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
@@ -121,13 +122,14 @@ public class VpxPlaybackTest {
           new ProgressiveMediaSource.Factory(
                   new DefaultDataSourceFactory(context, "ExoPlayerExtVp9Test"),
                   MatroskaExtractor.FACTORY)
-              .createMediaSource(uri);
+              .createMediaSource(MediaItem.fromUri(uri));
       player
           .createMessage(videoRenderer)
-          .setType(C.MSG_SET_VIDEO_DECODER_OUTPUT_BUFFER_RENDERER)
+          .setType(Renderer.MSG_SET_VIDEO_DECODER_OUTPUT_BUFFER_RENDERER)
           .setPayload(new VideoDecoderGLSurfaceView(context).getVideoDecoderOutputBufferRenderer())
           .send();
-      player.prepare(mediaSource);
+      player.setMediaSource(mediaSource);
+      player.prepare();
       player.play();
       Looper.loop();
     }

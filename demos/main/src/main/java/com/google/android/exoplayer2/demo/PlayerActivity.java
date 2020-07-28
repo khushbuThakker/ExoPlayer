@@ -29,7 +29,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
@@ -39,28 +38,24 @@ import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.RenderersFactory;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.audio.AudioAttributes;
+import com.google.android.exoplayer2.ext.ima.ImaAdsLoader;
 import com.google.android.exoplayer2.mediacodec.MediaCodecRenderer.DecoderInitializationException;
 import com.google.android.exoplayer2.mediacodec.MediaCodecUtil.DecoderQueryException;
 import com.google.android.exoplayer2.source.BehindLiveWindowException;
 import com.google.android.exoplayer2.source.DefaultMediaSourceFactory;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.ads.AdsLoader;
-import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.MappingTrackSelector.MappedTrackInfo;
-import com.google.android.exoplayer2.trackselection.RandomTrackSelection;
-import com.google.android.exoplayer2.trackselection.TrackSelection;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.ui.DebugTextViewHelper;
-import com.google.android.exoplayer2.ui.PlayerControlView;
-import com.google.android.exoplayer2.ui.PlayerView;
-import com.google.android.exoplayer2.ui.spherical.SphericalGLSurfaceView;
+import com.google.android.exoplayer2.ui.StyledPlayerControlView;
+import com.google.android.exoplayer2.ui.StyledPlayerView;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.ErrorMessageProvider;
 import com.google.android.exoplayer2.util.EventLogger;
 import com.google.android.exoplayer2.util.Util;
-import java.lang.reflect.Constructor;
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
@@ -69,7 +64,7 @@ import java.util.List;
 
 /** An activity that plays media using {@link SimpleExoPlayer}. */
 public class PlayerActivity extends AppCompatActivity
-    implements OnClickListener, PlaybackPreparer, PlayerControlView.VisibilityListener {
+    implements OnClickListener, PlaybackPreparer, StyledPlayerControlView.VisibilityListener {
 
   // Saved instance state keys.
 
@@ -85,14 +80,14 @@ public class PlayerActivity extends AppCompatActivity
     DEFAULT_COOKIE_MANAGER.setCookiePolicy(CookiePolicy.ACCEPT_ORIGINAL_SERVER);
   }
 
-  private PlayerView playerView;
-  private LinearLayout debugRootView;
-  private Button selectTracksButton;
-  private TextView debugTextView;
-  private boolean isShowingTrackSelectionDialog;
+  protected StyledPlayerView playerView;
+  protected LinearLayout debugRootView;
+  protected TextView debugTextView;
+  protected SimpleExoPlayer player;
 
+  private boolean isShowingTrackSelectionDialog;
+  private Button selectTracksButton;
   private DataSource.Factory dataSourceFactory;
-  private SimpleExoPlayer player;
   private List<MediaItem> mediaItems;
   private DefaultTrackSelector trackSelector;
   private DefaultTrackSelector.Parameters trackSelectorParameters;
@@ -112,17 +107,13 @@ public class PlayerActivity extends AppCompatActivity
   @Override
   public void onCreate(Bundle savedInstanceState) {
     Intent intent = getIntent();
-    String sphericalStereoMode = intent.getStringExtra(IntentUtil.SPHERICAL_STEREO_MODE_EXTRA);
-    if (sphericalStereoMode != null) {
-      setTheme(R.style.PlayerTheme_Spherical);
-    }
     super.onCreate(savedInstanceState);
     dataSourceFactory = buildDataSourceFactory();
     if (CookieHandler.getDefault() != DEFAULT_COOKIE_MANAGER) {
       CookieHandler.setDefault(DEFAULT_COOKIE_MANAGER);
     }
 
-    setContentView(R.layout.player_activity);
+    setContentView();
     debugRootView = findViewById(R.id.controls_root);
     debugTextView = findViewById(R.id.debug_text_view);
     selectTracksButton = findViewById(R.id.select_tracks_button);
@@ -132,21 +123,6 @@ public class PlayerActivity extends AppCompatActivity
     playerView.setControllerVisibilityListener(this);
     playerView.setErrorMessageProvider(new PlayerErrorMessageProvider());
     playerView.requestFocus();
-    if (sphericalStereoMode != null) {
-      int stereoMode;
-      if (IntentUtil.SPHERICAL_STEREO_MODE_MONO.equals(sphericalStereoMode)) {
-        stereoMode = C.STEREO_MODE_MONO;
-      } else if (IntentUtil.SPHERICAL_STEREO_MODE_TOP_BOTTOM.equals(sphericalStereoMode)) {
-        stereoMode = C.STEREO_MODE_TOP_BOTTOM;
-      } else if (IntentUtil.SPHERICAL_STEREO_MODE_LEFT_RIGHT.equals(sphericalStereoMode)) {
-        stereoMode = C.STEREO_MODE_LEFT_RIGHT;
-      } else {
-        showToast(R.string.error_unrecognized_stereo_mode);
-        finish();
-        return;
-      }
-      ((SphericalGLSurfaceView) playerView.getVideoSurfaceView()).setDefaultStereoMode(stereoMode);
-    }
 
     if (savedInstanceState != null) {
       trackSelectorParameters = savedInstanceState.getParcelable(KEY_TRACK_SELECTOR_PARAMETERS);
@@ -156,10 +132,6 @@ public class PlayerActivity extends AppCompatActivity
     } else {
       DefaultTrackSelector.ParametersBuilder builder =
           new DefaultTrackSelector.ParametersBuilder(/* context= */ this);
-      boolean tunneling = intent.getBooleanExtra(IntentUtil.TUNNELING_EXTRA, false);
-      if (Util.SDK_INT >= 21 && tunneling) {
-        builder.setTunnelingAudioSessionId(C.generateAudioSessionIdV21(/* context= */ this));
-      }
       trackSelectorParameters = builder.build();
       clearStartPosition();
     }
@@ -292,7 +264,11 @@ public class PlayerActivity extends AppCompatActivity
 
   // Internal methods
 
-  private void initializePlayer() {
+  protected void setContentView() {
+    setContentView(R.layout.player_activity);
+  }
+
+  protected void initializePlayer() {
     if (player == null) {
       Intent intent = getIntent();
 
@@ -301,24 +277,12 @@ public class PlayerActivity extends AppCompatActivity
         return;
       }
 
-      TrackSelection.Factory trackSelectionFactory;
-      String abrAlgorithm = intent.getStringExtra(IntentUtil.ABR_ALGORITHM_EXTRA);
-      if (abrAlgorithm == null || IntentUtil.ABR_ALGORITHM_DEFAULT.equals(abrAlgorithm)) {
-        trackSelectionFactory = new AdaptiveTrackSelection.Factory();
-      } else if (IntentUtil.ABR_ALGORITHM_RANDOM.equals(abrAlgorithm)) {
-        trackSelectionFactory = new RandomTrackSelection.Factory();
-      } else {
-        showToast(R.string.error_unrecognized_abr_algorithm);
-        finish();
-        return;
-      }
-
       boolean preferExtensionDecoders =
           intent.getBooleanExtra(IntentUtil.PREFER_EXTENSION_DECODERS_EXTRA, false);
       RenderersFactory renderersFactory =
-          ((DemoApplication) getApplication()).buildRenderersFactory(preferExtensionDecoders);
+          DemoUtil.buildRenderersFactory(/* context= */ this, preferExtensionDecoders);
 
-      trackSelector = new DefaultTrackSelector(/* context= */ this, trackSelectionFactory);
+      trackSelector = new DefaultTrackSelector(/* context= */ this);
       trackSelector.setParameters(trackSelectorParameters);
       lastSeenTrackGroupArray = null;
 
@@ -358,7 +322,7 @@ public class PlayerActivity extends AppCompatActivity
 
     List<MediaItem> mediaItems =
         IntentUtil.createMediaItemsFromIntent(
-            intent, ((DemoApplication) getApplication()).getDownloadTracker());
+            intent, DemoUtil.getDownloadTracker(/* context= */ this));
     boolean hasAds = false;
     for (int i = 0; i < mediaItems.size(); i++) {
       MediaItem mediaItem = mediaItems.get(i);
@@ -393,7 +357,7 @@ public class PlayerActivity extends AppCompatActivity
     return mediaItems;
   }
 
-  private void releasePlayer() {
+  protected void releasePlayer() {
     if (player != null) {
       updateTrackSelectorParameters();
       updateStartPosition();
@@ -432,40 +396,15 @@ public class PlayerActivity extends AppCompatActivity
     }
   }
 
-  private void clearStartPosition() {
+  protected void clearStartPosition() {
     startAutoPlay = true;
     startWindow = C.INDEX_UNSET;
     startPosition = C.TIME_UNSET;
   }
 
   /** Returns a new DataSource factory. */
-  private DataSource.Factory buildDataSourceFactory() {
-    return ((DemoApplication) getApplication()).buildDataSourceFactory();
-  }
-
-  /**
-   * Returns an ads loader for the Interactive Media Ads SDK if found in the classpath, or null
-   * otherwise.
-   */
-  @Nullable
-  private AdsLoader maybeCreateAdsLoader(Uri adTagUri) {
-    // Load the extension source using reflection so the demo app doesn't have to depend on it.
-    try {
-      Class<?> loaderClass = Class.forName("com.google.android.exoplayer2.ext.ima.ImaAdsLoader");
-      // Full class names used so the lint rule triggers should any of the classes move.
-      // LINT.IfChange
-      Constructor<? extends AdsLoader> loaderConstructor =
-          loaderClass
-              .asSubclass(AdsLoader.class)
-              .getConstructor(android.content.Context.class, android.net.Uri.class);
-      // LINT.ThenChange(../../../../../../../../proguard-rules.txt)
-      return loaderConstructor.newInstance(this, adTagUri);
-    } catch (ClassNotFoundException e) {
-      // IMA extension not loaded.
-      return null;
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+  protected DataSource.Factory buildDataSourceFactory() {
+    return DemoUtil.buildDataSourceFactory(/* context= */ this);
   }
 
   // User controls
@@ -581,7 +520,6 @@ public class PlayerActivity extends AppCompatActivity
 
   private class AdSupportProvider implements DefaultMediaSourceFactory.AdSupportProvider {
 
-    @Nullable
     @Override
     public AdsLoader getAdsLoader(Uri adTagUri) {
       if (mediaItems.size() > 1) {
@@ -595,13 +533,9 @@ public class PlayerActivity extends AppCompatActivity
       }
       // The ads loader is reused for multiple playbacks, so that ad playback can resume.
       if (adsLoader == null) {
-        adsLoader = maybeCreateAdsLoader(adTagUri);
+        adsLoader = new ImaAdsLoader(/* context= */ PlayerActivity.this, adTagUri);
       }
-      if (adsLoader != null) {
-        adsLoader.setPlayer(player);
-      } else {
-        showToast(R.string.ima_not_loaded);
-      }
+      adsLoader.setPlayer(player);
       return adsLoader;
     }
 

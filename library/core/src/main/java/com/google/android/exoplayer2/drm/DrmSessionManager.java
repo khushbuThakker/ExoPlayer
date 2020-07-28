@@ -33,11 +33,6 @@ public interface DrmSessionManager {
       new DrmSessionManager() {
 
         @Override
-        public boolean canAcquireSession(DrmInitData drmInitData) {
-          return false;
-        }
-
-        @Override
         public DrmSession acquireSession(
             Looper playbackLooper,
             @Nullable DrmSessionEventListener.EventDispatcher eventDispatcher,
@@ -49,8 +44,9 @@ public interface DrmSessionManager {
 
         @Override
         @Nullable
-        public Class<ExoMediaCrypto> getExoMediaCryptoType(DrmInitData drmInitData) {
-          return null;
+        public Class<UnsupportedMediaCrypto> getExoMediaCryptoType(
+            @Nullable DrmInitData drmInitData, int trackType) {
+          return drmInitData != null ? UnsupportedMediaCrypto.class : null;
         }
       };
 
@@ -68,16 +64,6 @@ public interface DrmSessionManager {
   default void release() {
     // Do nothing.
   }
-
-  /**
-   * Returns whether the manager is capable of acquiring a session for the given
-   * {@link DrmInitData}.
-   *
-   * @param drmInitData DRM initialization data.
-   * @return Whether the manager is capable of acquiring a session for the given
-   *     {@link DrmInitData}.
-   */
-  boolean canAcquireSession(DrmInitData drmInitData);
 
   /**
    * Returns a {@link DrmSession} that does not execute key requests, with an incremented reference
@@ -118,9 +104,23 @@ public interface DrmSessionManager {
       DrmInitData drmInitData);
 
   /**
-   * Returns the {@link ExoMediaCrypto} type returned by sessions acquired using the given {@link
-   * DrmInitData}, or null if a session cannot be acquired with the given {@link DrmInitData}.
+   * Returns the {@link ExoMediaCrypto} type associated to sessions acquired using the given
+   * parameters. Returns the {@link UnsupportedMediaCrypto} type if this DRM session manager does
+   * not support the given {@link DrmInitData}. If {@code drmInitData} is null, returns an {@link
+   * ExoMediaCrypto} type if this DRM session manager would associate a {@link
+   * #acquirePlaceholderSession placeholder session} to the given {@code trackType}, or null
+   * otherwise.
+   *
+   * @param drmInitData The {@link DrmInitData} to acquire sessions with. May be null for
+   *     unencrypted content (See {@link #acquirePlaceholderSession placeholder sessions}).
+   * @param trackType The type of the track to which {@code drmInitData} belongs. Must be one of the
+   *     {@link C}{@code .TRACK_TYPE_*} constants.
+   * @return The {@link ExoMediaCrypto} type associated to sessions acquired using the given
+   *     parameters, or the {@link UnsupportedMediaCrypto} type if the provided {@code drmInitData}
+   *     is not supported, or {@code null} if {@code drmInitData} is null and no DRM session will be
+   *     associated to the given {@code trackType}.
    */
   @Nullable
-  Class<? extends ExoMediaCrypto> getExoMediaCryptoType(DrmInitData drmInitData);
+  Class<? extends ExoMediaCrypto> getExoMediaCryptoType(
+      @Nullable DrmInitData drmInitData, int trackType);
 }

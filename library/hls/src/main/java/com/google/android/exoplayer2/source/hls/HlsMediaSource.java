@@ -16,6 +16,7 @@
 package com.google.android.exoplayer2.source.hls;
 
 import static com.google.android.exoplayer2.util.Assertions.checkNotNull;
+import static java.lang.Math.max;
 import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 import android.net.Uri;
@@ -319,7 +320,7 @@ public final class HlsMediaSource extends BaseMediaSource
     }
 
     /**
-     * @deprecated Use {@link #createMediaSource(Uri)} and {@link #addEventListener(Handler,
+     * @deprecated Use {@link #createMediaSource(MediaItem)} and {@link #addEventListener(Handler,
      *     MediaSourceEventListener)} instead.
      */
     @SuppressWarnings("deprecation")
@@ -527,7 +528,7 @@ public final class HlsMediaSource extends BaseMediaSource
           playlist.targetDurationUs = segments.get(Math.max(0, defaultStartSegmentIndex - 1)).durationUs / 2;
 
           //If LowLatency enable start from #2 segment (from #1 segment may cause rebuffer) else on half of segments
-          defaultStartSegmentIndex = Math.max(
+          defaultStartSegmentIndex = max(
                   0,
                   LowLatency > 0 ? (defaultStartSegmentIndex - LowLatency) : (defaultStartSegmentIndex - (defaultStartSegmentIndex / 2))
           );

@@ -923,7 +923,7 @@ public class PlayerNotificationManager {
    *   <li>The media is not {@link Player#isCurrentWindowDynamic() dynamically changing its
    *       duration} (like for example a live stream).
    *   <li>The media is not {@link Player#isPlayingAd() interrupted by an ad}.
-   *   <li>The media is played at {@link Player#getPlaybackParameters() regular speed}.
+   *   <li>The media is played at {@link Player#getPlaybackSpeed() regular speed}.
    *   <li>The device is running at least API 21 (Lollipop).
    * </ul>
    *
@@ -971,6 +971,8 @@ public class PlayerNotificationManager {
     }
   }
 
+  // We're calling a deprecated listener method that we still want to notify.
+  @SuppressWarnings("deprecation")
   private void startOrUpdateNotification(Player player, @Nullable Bitmap bitmap) {
     boolean ongoing = getOngoing(player);
     builder = createNotification(player, builder, ongoing, bitmap);
@@ -993,6 +995,8 @@ public class PlayerNotificationManager {
     }
   }
 
+  // We're calling a deprecated listener method that we still want to notify.
+  @SuppressWarnings("deprecation")
   private void stopNotification(boolean dismissedByUser) {
     if (isNotificationStarted) {
       isNotificationStarted = false;
@@ -1082,7 +1086,7 @@ public class PlayerNotificationManager {
         && player.isPlaying()
         && !player.isPlayingAd()
         && !player.isCurrentWindowDynamic()
-        && player.getPlaybackParameters().speed == 1f) {
+        && player.getPlaybackSpeed() == 1f) {
       builder
           .setWhen(System.currentTimeMillis() - player.getContentPosition())
           .setShowWhen(true)

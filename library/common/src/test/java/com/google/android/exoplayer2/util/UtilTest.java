@@ -24,14 +24,14 @@ import static com.google.android.exoplayer2.util.Util.parseXsDuration;
 import static com.google.android.exoplayer2.util.Util.unescapeFileName;
 import static com.google.common.truth.Truth.assertThat;
 
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.StrikethroughSpan;
 import android.text.style.UnderlineSpan;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.testutil.TestUtil;
-import com.google.android.exoplayer2.testutil.truth.SpannedSubject;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -742,17 +742,24 @@ public class UtilTest {
 
     assertThat(result).isInstanceOf(SpannableString.class);
     assertThat(result.toString()).isEqualTo("a short");
-    SpannedSubject.assertThat((Spanned) result)
-        .hasUnderlineSpanBetween(0, 7)
-        .withFlags(Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-    SpannedSubject.assertThat((Spanned) result)
-        .hasStrikethroughSpanBetween(4, 7)
-        .withFlags(Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
+    // TODO(internal b/161804035): Use SpannedSubject when it's available in a dependency we can use
+    // from here.
+    Spanned spannedResult = (Spanned) result;
+    Object[] spans = spannedResult.getSpans(0, result.length(), Object.class);
+    assertThat(spans).hasLength(2);
+    assertThat(spans[0]).isInstanceOf(UnderlineSpan.class);
+    assertThat(spannedResult.getSpanStart(spans[0])).isEqualTo(0);
+    assertThat(spannedResult.getSpanEnd(spans[0])).isEqualTo(7);
+    assertThat(spannedResult.getSpanFlags(spans[0])).isEqualTo(Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    assertThat(spans[1]).isInstanceOf(StrikethroughSpan.class);
+    assertThat(spannedResult.getSpanStart(spans[1])).isEqualTo(4);
+    assertThat(spannedResult.getSpanEnd(spans[1])).isEqualTo(7);
+    assertThat(spannedResult.getSpanFlags(spans[1])).isEqualTo(Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
   }
 
   @Test
   public void toHexString_returnsHexString() {
-    byte[] bytes = TestUtil.createByteArray(0x12, 0xFC, 0x06);
+    byte[] bytes = createByteArray(0x12, 0xFC, 0x06);
 
     assertThat(Util.toHexString(bytes)).isEqualTo("12fc06");
   }
@@ -799,7 +806,7 @@ public class UtilTest {
 
     Random random = new Random(0);
     for (int i = 0; i < 1000; i++) {
-      String string = TestUtil.buildTestString(1000, random);
+      String string = buildTestString(1000, random);
       assertEscapeUnescapeFileName(string);
     }
   }
@@ -854,7 +861,7 @@ public class UtilTest {
 
   @Test
   public void inflate_withDeflatedData_success() {
-    byte[] testData = TestUtil.buildTestData(/*arbitrary test data size*/ 256 * 1024);
+    byte[] testData = buildTestData(/*arbitrary test data size*/ 256 * 1024);
     byte[] compressedData = new byte[testData.length * 2];
     Deflater compresser = new Deflater(9);
     compresser.setInput(testData);
@@ -866,7 +873,7 @@ public class UtilTest {
     ParsableByteArray output = new ParsableByteArray();
     assertThat(Util.inflate(input, output, /* inflater= */ null)).isTrue();
     assertThat(output.limit()).isEqualTo(testData.length);
-    assertThat(Arrays.copyOf(output.data, output.limit())).isEqualTo(testData);
+    assertThat(Arrays.copyOf(output.getData(), output.limit())).isEqualTo(testData);
   }
 
   // TODO: Revert to @Config(sdk = Config.ALL_SDKS) once b/143232359 is resolved
@@ -940,7 +947,7 @@ public class UtilTest {
     assertThat(Util.normalizeLanguageCode("ji")).isEqualTo(Util.normalizeLanguageCode("yi"));
     assertThat(Util.normalizeLanguageCode("ji")).isEqualTo(Util.normalizeLanguageCode("yid"));
 
-    // Grandfathered tags
+    // Legacy tags
     assertThat(Util.normalizeLanguageCode("i-lux")).isEqualTo(Util.normalizeLanguageCode("lb"));
     assertThat(Util.normalizeLanguageCode("i-lux")).isEqualTo(Util.normalizeLanguageCode("ltz"));
     assertThat(Util.normalizeLanguageCode("i-hak")).isEqualTo(Util.normalizeLanguageCode("hak"));
@@ -997,6 +1004,21 @@ public class UtilTest {
     assertThat(Util.normalizeLanguageCode("hsn")).isEqualTo("zh-hsn");
   }
 
+  @Test
+  public void tableExists_withExistingTable() {
+    SQLiteDatabase database = getInMemorySQLiteOpenHelper().getWritableDatabase();
+    database.execSQL("CREATE TABLE TestTable (ID INTEGER NOT NULL)");
+
+    assertThat(Util.tableExists(database, "TestTable")).isTrue();
+  }
+
+  @Test
+  public void tableExists_withNonExistingTable() {
+    SQLiteDatabase database = getInMemorySQLiteOpenHelper().getReadableDatabase();
+
+    assertThat(Util.tableExists(database, "table")).isFalse();
+  }
+
   private static void assertEscapeUnescapeFileName(String fileName, String escapedFileName) {
     assertThat(escapeFileName(fileName)).isEqualTo(escapedFileName);
     assertThat(unescapeFileName(escapedFileName)).isEqualTo(fileName);
@@ -1013,5 +1035,52 @@ public class UtilTest {
       longArray.add(value);
     }
     return longArray;
+  }
+
+  /** Returns a {@link SQLiteOpenHelper} that provides an in-memory database. */
+  private static SQLiteOpenHelper getInMemorySQLiteOpenHelper() {
+    return new SQLiteOpenHelper(
+        /* context= */ null, /* name= */ null, /* factory= */ null, /* version= */ 1) {
+      @Override
+      public void onCreate(SQLiteDatabase db) {}
+
+      @Override
+      public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {}
+    };
+  }
+
+  /** Generates an array of random bytes with the specified length. */
+  private static byte[] buildTestData(int length, int seed) {
+    byte[] source = new byte[length];
+    new Random(seed).nextBytes(source);
+    return source;
+  }
+
+  /** Equivalent to {@code buildTestData(length, length)}. */
+  // TODO(internal b/161804035): Use TestUtils when it's available in a dependency we can use here.
+  private static byte[] buildTestData(int length) {
+    return buildTestData(length, length);
+  }
+
+  /** Generates a random string with the specified maximum length. */
+  // TODO(internal b/161804035): Use TestUtils when it's available in a dependency we can use here.
+  private static String buildTestString(int maximumLength, Random random) {
+    int length = random.nextInt(maximumLength);
+    StringBuilder builder = new StringBuilder(length);
+    for (int i = 0; i < length; i++) {
+      builder.append((char) random.nextInt());
+    }
+    return builder.toString();
+  }
+
+  /** Converts an array of integers in the range [0, 255] into an equivalent byte array. */
+  // TODO(internal b/161804035): Use TestUtils when it's available in a dependency we can use here.
+  private static byte[] createByteArray(int... bytes) {
+    byte[] byteArray = new byte[bytes.length];
+    for (int i = 0; i < byteArray.length; i++) {
+      Assertions.checkState(0x00 <= bytes[i] && bytes[i] <= 0xFF);
+      byteArray[i] = (byte) bytes[i];
+    }
+    return byteArray;
   }
 }

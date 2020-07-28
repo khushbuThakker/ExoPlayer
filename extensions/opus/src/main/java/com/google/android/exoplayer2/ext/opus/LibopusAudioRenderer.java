@@ -21,6 +21,7 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.audio.AudioProcessor;
 import com.google.android.exoplayer2.audio.AudioRendererEventListener;
+import com.google.android.exoplayer2.audio.AudioSink;
 import com.google.android.exoplayer2.audio.DecoderAudioRenderer;
 import com.google.android.exoplayer2.drm.ExoMediaCrypto;
 import com.google.android.exoplayer2.util.MimeTypes;
@@ -44,6 +45,8 @@ public class LibopusAudioRenderer extends DecoderAudioRenderer {
   }
 
   /**
+   * Creates a new instance.
+   *
    * @param eventHandler A handler to use when delivering events to {@code eventListener}. May be
    *     null if delivery of events is not required.
    * @param eventListener A listener of events. May be null if delivery of events is not required.
@@ -56,6 +59,21 @@ public class LibopusAudioRenderer extends DecoderAudioRenderer {
     super(eventHandler, eventListener, audioProcessors);
   }
 
+  /**
+   * Creates a new instance.
+   *
+   * @param eventHandler A handler to use when delivering events to {@code eventListener}. May be
+   *     null if delivery of events is not required.
+   * @param eventListener A listener of events. May be null if delivery of events is not required.
+   * @param audioSink The sink to which audio will be output.
+   */
+  public LibopusAudioRenderer(
+      @Nullable Handler eventHandler,
+      @Nullable AudioRendererEventListener eventListener,
+      AudioSink audioSink) {
+    super(eventHandler, eventListener, audioSink);
+  }
+
   @Override
   public String getName() {
     return TAG;
@@ -65,7 +83,7 @@ public class LibopusAudioRenderer extends DecoderAudioRenderer {
   @FormatSupport
   protected int supportsFormatInternal(Format format) {
     boolean drmIsSupported =
-        format.drmInitData == null
+        format.exoMediaCryptoType == null
             || OpusLibrary.matchesExpectedExoMediaCryptoType(format.exoMediaCryptoType);
     if (!OpusLibrary.isAvailable()
         || !MimeTypes.AUDIO_OPUS.equalsIgnoreCase(format.sampleMimeType)) {

@@ -311,9 +311,9 @@ public interface Player {
 
     /**
      * Sets the video decoder output buffer renderer. This is intended for use only with extension
-     * renderers that accept {@link C#MSG_SET_VIDEO_DECODER_OUTPUT_BUFFER_RENDERER}. For most use
-     * cases, an output surface or view should be passed via {@link #setVideoSurface(Surface)} or
-     * {@link #setVideoSurfaceView(SurfaceView)} instead.
+     * renderers that accept {@link Renderer#MSG_SET_VIDEO_DECODER_OUTPUT_BUFFER_RENDERER}. For most
+     * use cases, an output surface or view should be passed via {@link #setVideoSurface(Surface)}
+     * or {@link #setVideoSurfaceView(SurfaceView)} instead.
      *
      * @param videoDecoderOutputBufferRenderer The video decoder output buffer renderer, or {@code
      *     null} to clear the output buffer renderer.
@@ -469,6 +469,19 @@ public interface Player {
     @Deprecated
     default void onTimelineChanged(
         Timeline timeline, @Nullable Object manifest, @TimelineChangeReason int reason) {}
+
+    /**
+     * Called when playback transitions to a media item or starts repeating a media item according
+     * to the current {@link #getRepeatMode() repeat mode}.
+     *
+     * <p>Note that this callback is also called when the playlist becomes non-empty or empty as a
+     * consequence of a playlist change.
+     *
+     * @param mediaItem The {@link MediaItem}. May be null if the playlist becomes empty.
+     * @param reason The reason for the transition.
+     */
+    default void onMediaItemTransition(
+        @Nullable MediaItem mediaItem, @MediaItemTransitionReason int reason) {}
 
     /**
      * Called when the available or selected tracks change.
@@ -765,6 +778,29 @@ public interface Player {
   int TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED = 0;
   /** Timeline changed as a result of a dynamic update introduced by the played media. */
   int TIMELINE_CHANGE_REASON_SOURCE_UPDATE = 1;
+
+  /** Reasons for media item transitions. */
+  @Documented
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    MEDIA_ITEM_TRANSITION_REASON_REPEAT,
+    MEDIA_ITEM_TRANSITION_REASON_AUTO,
+    MEDIA_ITEM_TRANSITION_REASON_SEEK,
+    MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED
+  })
+  @interface MediaItemTransitionReason {}
+  /** The media item has been repeated. */
+  int MEDIA_ITEM_TRANSITION_REASON_REPEAT = 0;
+  /** Playback has automatically transitioned to the next media item. */
+  int MEDIA_ITEM_TRANSITION_REASON_AUTO = 1;
+  /** A seek to another media item has occurred. */
+  int MEDIA_ITEM_TRANSITION_REASON_SEEK = 2;
+  /**
+   * The current media item has changed because of a change in the playlist. This can either be if
+   * the media item previously being played has been removed, or when the playlist becomes non-empty
+   * after being empty.
+   */
+  int MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED = 3;
 
   /** The default playback speed. */
   float DEFAULT_PLAYBACK_SPEED = 1.0f;
@@ -1158,19 +1194,21 @@ public interface Player {
    * player instance can still be used, and {@link #release()} must still be called on the player if
    * it's no longer required.
    *
-   * <p>Calling this method does not reset the playback position.
+   * <p>Calling this method does not clear the playlist, reset the playback position or the playback
+   * error.
    */
   void stop();
 
   /**
-   * Stops playback and optionally resets the player. Use {@link #pause()} rather than this method
-   * if the intention is to pause playback.
+   * Stops playback and optionally clears the playlist and resets the position and playback error.
+   * Use {@link #pause()} rather than this method if the intention is to pause playback.
    *
    * <p>Calling this method will cause the playback state to transition to {@link #STATE_IDLE}. The
    * player instance can still be used, and {@link #release()} must still be called on the player if
    * it's no longer required.
    *
-   * @param reset Whether the player should be reset.
+   * @param reset Whether the playlist should be cleared and whether the playback position and
+   *     playback error should be reset.
    */
   void stop(boolean reset);
 

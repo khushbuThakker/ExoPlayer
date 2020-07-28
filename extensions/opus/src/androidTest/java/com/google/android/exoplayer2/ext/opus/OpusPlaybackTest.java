@@ -25,6 +25,7 @@ import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.extractor.mkv.MatroskaExtractor;
 import com.google.android.exoplayer2.source.MediaSource;
@@ -93,8 +94,9 @@ public class OpusPlaybackTest {
           new ProgressiveMediaSource.Factory(
                   new DefaultDataSourceFactory(context, "ExoPlayerExtOpusTest"),
                   MatroskaExtractor.FACTORY)
-              .createMediaSource(uri);
-      player.prepare(mediaSource);
+              .createMediaSource(MediaItem.fromUri(uri));
+      player.setMediaSource(mediaSource);
+      player.prepare();
       player.play();
       Looper.loop();
     }

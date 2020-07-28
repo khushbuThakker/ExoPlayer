@@ -19,10 +19,14 @@ dependencies {
     implementation 'androidx.annotation:annotation:' + androidxAnnotationVersion
     implementation 'com.google.guava:guava:' + guavaVersion
     compileOnly 'com.google.code.findbugs:jsr305:' + jsr305Version
-    compileOnly 'org.checkerframework:checker-qual:' + checkerframeworkVersion
     compileOnly 'org.checkerframework:checker-compat-qual:' + checkerframeworkCompatVersion
+    compileOnly 'org.checkerframework:checker-qual:' + checkerframeworkVersion
     compileOnly 'org.jetbrains.kotlin:kotlin-annotations-jvm:' + kotlinAnnotationsVersion
-    testImplementation project(modulePrefix + 'testutils')
+    testImplementation 'org.mockito:mockito-core:' + mockitoVersion
+    testImplementation 'androidx.test:core:' + androidxTestCoreVersion
+    testImplementation 'androidx.test.ext:junit:' + androidxTestJUnitVersion
+    testImplementation 'junit:junit:' + junitVersion
+    testImplementation 'com.google.truth:truth:' + truthVersion
     testImplementation 'org.robolectric:robolectric:' + robolectricVersion
 }
 

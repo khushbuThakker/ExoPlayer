@@ -319,9 +319,9 @@ public interface Renderer extends PlayerMessage.Target {
 
   /**
    * Replaces the {@link SampleStream} from which samples will be consumed.
-   * <p>
-   * This method may be called when the renderer is in the following states:
-   * {@link #STATE_ENABLED}, {@link #STATE_STARTED}.
+   *
+   * <p>This method may be called when the renderer is in the following states: {@link
+   * #STATE_ENABLED}, {@link #STATE_STARTED}.
    *
    * @param formats The enabled formats.
    * @param stream The {@link SampleStream} from which the renderer should consume.

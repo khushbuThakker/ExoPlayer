@@ -37,15 +37,17 @@ public final class DefaultDownloaderFactoryTest {
         new CacheDataSource.Factory()
             .setCache(Mockito.mock(Cache.class))
             .setUpstreamDataSourceFactory(DummyDataSource.FACTORY);
-    DownloaderFactory factory = new DefaultDownloaderFactory(cacheDataSourceFactory);
+    DownloaderFactory factory =
+        new DefaultDownloaderFactory(cacheDataSourceFactory, /* executor= */ Runnable::run);
 
     Downloader downloader =
         factory.createDownloader(
             new DownloadRequest(
-                "id",
-                DownloadRequest.TYPE_PROGRESSIVE,
+                /* id= */ "id",
                 Uri.parse("https://www.test.com/download"),
+                /* mimeType= */ null,
                 /* streamKeys= */ Collections.emptyList(),
+                /* keySetId= */ null,
                 /* customCacheKey= */ null,
                 /* data= */ null));
     assertThat(downloader).isInstanceOf(ProgressiveDownloader.class);

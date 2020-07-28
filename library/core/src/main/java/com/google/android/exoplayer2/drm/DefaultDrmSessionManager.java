@@ -326,6 +326,7 @@ public class DefaultDrmSessionManager implements DrmSessionManager {
    *     Default is false.
    * @deprecated Use {@link Builder} instead.
    */
+  @SuppressWarnings("deprecation")
   @Deprecated
   public DefaultDrmSessionManager(
       UUID uuid,
@@ -465,38 +466,6 @@ public class DefaultDrmSessionManager implements DrmSessionManager {
   }
 
   @Override
-  public boolean canAcquireSession(DrmInitData drmInitData) {
-    if (offlineLicenseKeySetId != null) {
-      // An offline license can be restored so a session can always be acquired.
-      return true;
-    }
-    List<SchemeData> schemeDatas = getSchemeDatas(drmInitData, uuid, true);
-    if (schemeDatas.isEmpty()) {
-      if (drmInitData.schemeDataCount == 1 && drmInitData.get(0).matches(C.COMMON_PSSH_UUID)) {
-        // Assume scheme specific data will be added before the session is opened.
-        Log.w(
-            TAG, "DrmInitData only contains common PSSH SchemeData. Assuming support for: " + uuid);
-      } else {
-        // No data for this manager's scheme.
-        return false;
-      }
-    }
-    String schemeType = drmInitData.schemeType;
-    if (schemeType == null || C.CENC_TYPE_cenc.equals(schemeType)) {
-      // If there is no scheme information, assume patternless AES-CTR.
-      return true;
-    } else if (C.CENC_TYPE_cbc1.equals(schemeType)
-        || C.CENC_TYPE_cbcs.equals(schemeType)
-        || C.CENC_TYPE_cens.equals(schemeType)) {
-      // API support for AES-CBC and pattern encryption was added in API 24. However, the
-      // implementation was not stable until API 25.
-      return Util.SDK_INT >= 25;
-    }
-    // Unknown schemes, assume one of them is supported.
-    return true;
-  }
-
-  @Override
   @Nullable
   public DrmSession acquirePlaceholderSession(Looper playbackLooper, int trackType) {
     initPlaybackLooper(playbackLooper);
@@ -577,13 +546,51 @@ public class DefaultDrmSessionManager implements DrmSessionManager {
 
   @Override
   @Nullable
-  public Class<? extends ExoMediaCrypto> getExoMediaCryptoType(DrmInitData drmInitData) {
-    return canAcquireSession(drmInitData)
-        ? Assertions.checkNotNull(exoMediaDrm).getExoMediaCryptoType()
-        : null;
+  public Class<? extends ExoMediaCrypto> getExoMediaCryptoType(
+      @Nullable DrmInitData drmInitData, int trackType) {
+    Class<? extends ExoMediaCrypto> exoMediaCryptoType =
+        Assertions.checkNotNull(exoMediaDrm).getExoMediaCryptoType();
+    if (drmInitData == null) {
+      return Util.linearSearch(useDrmSessionsForClearContentTrackTypes, trackType) != C.INDEX_UNSET
+          ? exoMediaCryptoType
+          : null;
+    } else {
+      return canAcquireSession(drmInitData) ? exoMediaCryptoType : UnsupportedMediaCrypto.class;
+    }
   }
 
   // Internal methods.
+
+  private boolean canAcquireSession(DrmInitData drmInitData) {
+    if (offlineLicenseKeySetId != null) {
+      // An offline license can be restored so a session can always be acquired.
+      return true;
+    }
+    List<SchemeData> schemeDatas = getSchemeDatas(drmInitData, uuid, true);
+    if (schemeDatas.isEmpty()) {
+      if (drmInitData.schemeDataCount == 1 && drmInitData.get(0).matches(C.COMMON_PSSH_UUID)) {
+        // Assume scheme specific data will be added before the session is opened.
+        Log.w(
+            TAG, "DrmInitData only contains common PSSH SchemeData. Assuming support for: " + uuid);
+      } else {
+        // No data for this manager's scheme.
+        return false;
+      }
+    }
+    String schemeType = drmInitData.schemeType;
+    if (schemeType == null || C.CENC_TYPE_cenc.equals(schemeType)) {
+      // If there is no scheme information, assume patternless AES-CTR.
+      return true;
+    } else if (C.CENC_TYPE_cbc1.equals(schemeType)
+        || C.CENC_TYPE_cbcs.equals(schemeType)
+        || C.CENC_TYPE_cens.equals(schemeType)) {
+      // API support for AES-CBC and pattern encryption was added in API 24. However, the
+      // implementation was not stable until API 25.
+      return Util.SDK_INT >= 25;
+    }
+    // Unknown schemes, assume one of them is supported.
+    return true;
+  }
 
   private void initPlaybackLooper(Looper playbackLooper) {
     if (this.playbackLooper == null) {

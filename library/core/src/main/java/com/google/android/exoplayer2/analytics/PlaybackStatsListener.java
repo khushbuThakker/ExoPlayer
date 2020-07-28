@@ -15,6 +15,8 @@
  */
 package com.google.android.exoplayer2.analytics;
 
+import static java.lang.Math.max;
+
 import android.os.SystemClock;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
@@ -284,8 +286,7 @@ public final class PlaybackStatsListener
 
   @Override
   public void onTimelineChanged(EventTime eventTime, @Player.TimelineChangeReason int reason) {
-    sessionManager.handleTimelineUpdate(eventTime);
-    maybeAddSession(eventTime);
+    sessionManager.updateSessionsWithTimelineChange(eventTime);
     for (String session : playbackStatsTrackers.keySet()) {
       if (sessionManager.belongsToSession(eventTime, session)) {
         playbackStatsTrackers.get(session).onPositionDiscontinuity(eventTime, /* isSeek= */ false);
@@ -295,8 +296,10 @@ public final class PlaybackStatsListener
 
   @Override
   public void onPositionDiscontinuity(EventTime eventTime, @Player.DiscontinuityReason int reason) {
-    sessionManager.handlePositionDiscontinuity(eventTime, reason);
-    maybeAddSession(eventTime);
+    boolean isCompletelyIdle = eventTime.timeline.isEmpty() && playbackState == Player.STATE_IDLE;
+    if (!isCompletelyIdle) {
+      sessionManager.updateSessionsWithDiscontinuity(eventTime, reason);
+    }
     if (reason == Player.DISCONTINUITY_REASON_SEEK) {
       onSeekStartedCalled = false;
     }
@@ -791,7 +794,7 @@ public final class PlaybackStatsListener
         long buildTimeMs = SystemClock.elapsedRealtime();
         playbackStateDurationsMs =
             Arrays.copyOf(this.playbackStateDurationsMs, PlaybackStats.PLAYBACK_STATE_COUNT);
-        long lastStateDurationMs = Math.max(0, buildTimeMs - currentPlaybackStateStartTimeMs);
+        long lastStateDurationMs = max(0, buildTimeMs - currentPlaybackStateStartTimeMs);
         playbackStateDurationsMs[currentPlaybackState] += lastStateDurationMs;
         maybeUpdateMaxRebufferTimeMs(buildTimeMs);
         maybeRecordVideoFormatTime(buildTimeMs);

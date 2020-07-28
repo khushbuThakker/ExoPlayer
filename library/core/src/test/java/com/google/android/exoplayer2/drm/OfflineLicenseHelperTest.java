@@ -32,11 +32,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.robolectric.annotation.LooperMode;
 
 /** Tests {@link OfflineLicenseHelper}. */
 @RunWith(AndroidJUnit4.class)
-@LooperMode(LooperMode.Mode.PAUSED)
 public class OfflineLicenseHelperTest {
 
   private OfflineLicenseHelper offlineLicenseHelper;
@@ -52,10 +50,10 @@ public class OfflineLicenseHelperTest {
             new ExoMediaDrm.KeyRequest(/* data= */ new byte[0], /* licenseServerUrl= */ ""));
     offlineLicenseHelper =
         new OfflineLicenseHelper(
-            C.WIDEVINE_UUID,
-            new ExoMediaDrm.AppManagedProvider(mediaDrm),
-            mediaDrmCallback,
-            /* optionalKeyRequestParameters= */ null,
+            new DefaultDrmSessionManager.Builder()
+                .setUuidAndExoMediaDrmProvider(
+                    C.WIDEVINE_UUID, new ExoMediaDrm.AppManagedProvider(mediaDrm))
+                .build(mediaDrmCallback),
             new DrmSessionEventListener.EventDispatcher());
   }
 

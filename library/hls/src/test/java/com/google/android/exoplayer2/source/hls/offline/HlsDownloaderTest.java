@@ -47,11 +47,13 @@ import com.google.android.exoplayer2.source.hls.playlist.HlsMasterPlaylist;
 import com.google.android.exoplayer2.testutil.CacheAsserts.RequestSet;
 import com.google.android.exoplayer2.testutil.FakeDataSet;
 import com.google.android.exoplayer2.testutil.FakeDataSource;
+import com.google.android.exoplayer2.testutil.TestUtil;
 import com.google.android.exoplayer2.upstream.DummyDataSource;
 import com.google.android.exoplayer2.upstream.cache.Cache;
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
 import com.google.android.exoplayer2.upstream.cache.NoOpCacheEvictor;
 import com.google.android.exoplayer2.upstream.cache.SimpleCache;
+import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.Util;
 import java.io.File;
 import java.util.ArrayList;
@@ -76,7 +78,8 @@ public class HlsDownloaderTest {
   public void setUp() throws Exception {
     tempFolder =
         Util.createTempDirectory(ApplicationProvider.getApplicationContext(), "ExoPlayerTest");
-    cache = new SimpleCache(tempFolder, new NoOpCacheEvictor());
+    cache =
+        new SimpleCache(tempFolder, new NoOpCacheEvictor(), TestUtil.getInMemoryDatabaseProvider());
     progressListener = new ProgressListener();
     fakeDataSet =
         new FakeDataSet()
@@ -102,15 +105,17 @@ public class HlsDownloaderTest {
         new CacheDataSource.Factory()
             .setCache(Mockito.mock(Cache.class))
             .setUpstreamDataSourceFactory(DummyDataSource.FACTORY);
-    DownloaderFactory factory = new DefaultDownloaderFactory(cacheDataSourceFactory);
+    DownloaderFactory factory =
+        new DefaultDownloaderFactory(cacheDataSourceFactory, /* executor= */ Runnable::run);
 
     Downloader downloader =
         factory.createDownloader(
             new DownloadRequest(
                 "id",
-                DownloadRequest.TYPE_HLS,
                 Uri.parse("https://www.test.com/download"),
+                MimeTypes.APPLICATION_M3U8,
                 Collections.singletonList(new StreamKey(/* groupIndex= */ 0, /* trackIndex= */ 0)),
+                /* keySetId= */ null,
                 /* customCacheKey= */ null,
                 /* data= */ null));
     assertThat(downloader).isInstanceOf(HlsDownloader.class);
